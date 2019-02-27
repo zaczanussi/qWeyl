@@ -67,6 +67,8 @@ phiDilation::usage = "";
 
 DilationU::usage = "";
 
+DilationUSparse::usage = "";
+
 vecMod::usage = "This computes the modulo of a list where each component is reduced mod it's corresponding element in nlist. 
 	It also happens to reduce a matrix's rows mod nlist, which is convenient.";
 
@@ -233,6 +235,18 @@ DilationU[A_] :=
      , {i, 1, numSystems}], 1], 
   Flatten[Table[{ket[Symbol["q" <> ToString[i]]], 
      bra[Symbol["q" <> ToString[i]]]}, {i, numSystems}]]]
+
+sendsTo[autInv_, jlist_] := 
+ Riffle[vecMod[autInv.jlist] + 1, jlist + 1]
+
+DilationUSparse[A_] := 
+ matrix[SparseArray@
+   Flatten[Table[
+       sendsTo[inverseAut[A], Table[j[i], {i, 1, numSystems}]] -> 
+        1, ##] & @@ 
+     Evaluate[Table[{j[i], 0, nlist[[i]] - 1}, {i, 1, numSystems}]]], 
+  Riffle[Table[ket[Symbol["q" <> ToString[i]]], {i, numSystems}], 
+   Table[bra[Symbol["q" <> ToString[i]]], {i, numSystems}]]]
 
 SDilation[A_] := 
  ArrayFlatten[{{A, 

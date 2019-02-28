@@ -32,7 +32,9 @@ X::usage = "The 'shift' operator";
 
 Z::usage = "The 'boost' operator";
 
-pi::usage = "The pi operator"
+pi::usage = "The pi operator";
+
+piSparse::usage = "";
 
 AngleBracket::usage = "";
 
@@ -156,9 +158,9 @@ adjointEndo[A_] := Nmat.Transpose[A].Inverse[Nmat]
 
 (*Weyl Stuff*)
 
-\[Chi][syst_,x_] := N[Exp[2 Pi I x /dimension[syst]]]
+\[Chi][syst_,x_] := Exp[2 Pi I x /dimension[syst]]
 
-\[Chi][syst_?IntegerQ,x_] := N[Exp[2 Pi I x /dimension[Subscript[q, syst]]]]
+\[Chi][syst_?IntegerQ,x_] := \[Chi][Subscript[q,syst],x]
 
 \[Chi][x_] := Product[\[Chi][i,x[[i]]],{i,numSystems}]
 
@@ -180,6 +182,23 @@ Z[syst_?IntegerQ, boost_?IntegerQ] := Z[Subscript[q, syst], boost]
 pi[lambda_] := Fold[diracMatrixProduct, 
  Table[Z[i, lambda[[numSystems + i]]] ** X[i, lambda[[i]]], {i, 
    numSystems}]]
+
+pi[l_,m_] := pi[Join[l,m]]
+
+piSparse[l_, m_] := 
+ matrix[SparseArray[
+   Flatten[Table[
+       piHelp[Table[g[i], {i, numSystems}], 
+         l] -> \[LeftAngleBracket]Table[g[i], {i, numSystems}], 
+          m\[RightAngleBracket] \[LeftAngleBracket]l, 
+          m\[RightAngleBracket], ##] & @@ 
+     Evaluate[Table[{g[i], 0, nlist[[i]] - 1}, {i, numSystems}]]], 
+   Riffle[nlist, nlist]], 
+  Riffle[Table[ket[Symbol["q" <> ToString[i]]], {i, numSystems}], 
+   Table[bra[Symbol["q" <> ToString[i]]], {i, numSystems}]]]
+
+piSparse[lambda_] := 
+ piSparse[lambda[[;; numSystems]], lambda[[numSystems + 1 ;;]]]
 
 AngleBracket[m_, k_] := Exp[2 Pi I m.Inverse[Nmat].k]
 

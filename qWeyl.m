@@ -185,6 +185,8 @@ pi[lambda_] := Fold[diracMatrixProduct,
 
 pi[l_,m_] := pi[Join[l,m]]
 
+piHelp[glist_, llist_] := Riffle[vecMod[glist + llist] + 1, glist + 1]
+
 piSparse[l_, m_] := 
  matrix[SparseArray[
    Flatten[Table[
@@ -261,7 +263,7 @@ sendsTo[autInv_, jlist_] :=
 DilationUSparse[A_] := 
  matrix[SparseArray@
    Flatten[Table[
-       sendsTo[inverseAut[A], Table[j[i], {i, 1, numSystems}]] -> 
+       sendsTo[A, Table[j[i], {i, 1, numSystems}]] -> 
         1, ##] & @@ 
      Evaluate[Table[{j[i], 0, nlist[[i]] - 1}, {i, 1, numSystems}]]], 
   Riffle[Table[ket[Symbol["q" <> ToString[i]]], {i, numSystems}], 

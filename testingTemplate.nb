@@ -1,0 +1,243 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 10.1' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      7248,        234]
+NotebookOptionsPosition[      5817,        184]
+NotebookOutlinePosition[      6153,        199]
+CellTagsIndexPosition[      6110,        196]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Testing Operators Template", "Subsection",
+ CellChangeTimes->{{3.760361070982567*^9, 3.76036107978745*^9}, {
+  3.760361878763152*^9, 3.760361881334579*^9}}],
+
+Cell["\<\
+It is time to set up a paradigm for testing this code. We can\
+\[CloseCurlyQuote]t just keep testing a few arbitrary cases and assuming \
+everything will work. I am planning on making this a template document that I \
+can copy for each object to test. \
+\>", "Text",
+ CellChangeTimes->{{3.7603610857588863`*^9, 3.760361117421891*^9}, {
+  3.760361854521027*^9, 3.7603618714998713`*^9}}],
+
+Cell[CellGroupData[{
+
+Cell["One system", "Subsubsection",
+ CellChangeTimes->{{3.760361353713365*^9, 3.760361359487452*^9}}],
+
+Cell["Simple system (prime)", "Text",
+ CellChangeTimes->{{3.7603616879540253`*^9, 3.760361690801939*^9}, {
+  3.760361813627887*^9, 3.760361815682765*^9}}],
+
+Cell[BoxData[
+ RowBox[{"qInit", "[", 
+  RowBox[{"1", ",", 
+   RowBox[{"{", "11", "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.760361798614522*^9, 3.760361803481187*^9}, {
+  3.760362008081152*^9, 3.760362009648954*^9}}],
+
+Cell["Simple system (power of a prime)", "Text",
+ CellChangeTimes->{{3.760361818626348*^9, 3.760361825385667*^9}}],
+
+Cell[BoxData[
+ RowBox[{"qInit", "[", 
+  RowBox[{"1", ",", 
+   RowBox[{"{", "81", "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.7603620117332897`*^9, 3.760362014743804*^9}, {
+  3.760362045070266*^9, 3.7603620466523647`*^9}}],
+
+Cell["Medium system (mixed)", "Text",
+ CellChangeTimes->{{3.760362434703471*^9, 3.760362439949078*^9}, {
+  3.760362478700526*^9, 3.7603624807145853`*^9}}],
+
+Cell[BoxData[
+ RowBox[{"qInit", "[", 
+  RowBox[{"1", ",", 
+   RowBox[{"{", "84", "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.7603624529611053`*^9, 3.760362456759569*^9}, {
+  3.7603624915035686`*^9, 3.760362493371654*^9}}],
+
+Cell["Large system (mixed)", "Text",
+ CellChangeTimes->{{3.7603616930323887`*^9, 3.760361695093595*^9}, {
+  3.7603624742167997`*^9, 3.760362476858552*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"qInit", "[", 
+   RowBox[{"1", ",", 
+    RowBox[{"{", "420", "}"}]}], "]"}], 
+  RowBox[{"(*", 
+   RowBox[{"2", " ", "2", " ", "3", " ", "5", " ", "7"}], "*)"}]}]], "Input",
+ CellChangeTimes->{{3.7603620570956373`*^9, 3.760362089017126*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Two systems", "Subsubsection",
+ CellChangeTimes->{{3.760361364914283*^9, 3.760361369395157*^9}}],
+
+Cell["Powers of one prime", "Text",
+ CellChangeTimes->{{3.7603615163936653`*^9, 3.76036152183813*^9}}],
+
+Cell[BoxData[
+ RowBox[{"qInit", "[", 
+  RowBox[{"2", ",", 
+   RowBox[{"{", 
+    RowBox[{"4", ",", "16"}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.7603621100950117`*^9, 3.76036211697784*^9}}],
+
+Cell["Distinct primes", "Text",
+ CellChangeTimes->{{3.760361526022066*^9, 3.760361539686432*^9}}],
+
+Cell[BoxData[
+ RowBox[{"qInit", "[", 
+  RowBox[{"2", ",", 
+   RowBox[{"{", 
+    RowBox[{"3", ",", "48"}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.760362118839493*^9, 3.7603621268973846`*^9}, {
+  3.7603622387144136`*^9, 3.7603622399642553`*^9}, {3.760363071873271*^9, 
+  3.760363085869562*^9}}],
+
+Cell["Mix of primes", "Text",
+ CellChangeTimes->{{3.760361531971912*^9, 3.760361536558778*^9}}],
+
+Cell[BoxData[
+ RowBox[{"qInit", "[", 
+  RowBox[{"2", ",", 
+   RowBox[{"{", 
+    RowBox[{"6", ",", "42"}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.760362242244952*^9, 3.760362265949123*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Three systems", "Subsubsection",
+ CellChangeTimes->{{3.760361373397159*^9, 3.760361376145461*^9}}],
+
+Cell["Powers of one prime", "Text",
+ CellChangeTimes->{{3.760361653026532*^9, 3.7603616557596827`*^9}}],
+
+Cell[BoxData[
+ RowBox[{"qInit", "[", 
+  RowBox[{"3", ",", 
+   RowBox[{"{", 
+    RowBox[{"2", ",", "8", ",", "16"}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.760362410879532*^9, 3.76036241247969*^9}, {
+  3.76036265048492*^9, 3.76036265933735*^9}}],
+
+Cell["Tower of primes", "Text",
+ CellChangeTimes->{{3.7603616583983917`*^9, 3.7603616610215893`*^9}, {
+  3.760363099396709*^9, 3.760363102997282*^9}}],
+
+Cell[BoxData[
+ RowBox[{"qInit", "[", 
+  RowBox[{"3", ",", 
+   RowBox[{"{", 
+    RowBox[{"3", ",", "6", ",", "30"}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.7603627340909*^9, 3.760362771275444*^9}, {
+  3.760363106986046*^9, 3.76036311253507*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Five systems", "Subsubsection",
+ CellChangeTimes->{{3.7603613819998837`*^9, 3.760361389249997*^9}}],
+
+Cell["Powers of one prime", "Text",
+ CellChangeTimes->{{3.760361653026532*^9, 3.7603616557596827`*^9}}],
+
+Cell[BoxData[
+ RowBox[{"qInit", "[", 
+  RowBox[{"5", ",", 
+   RowBox[{"{", 
+    RowBox[{"2", ",", "4", ",", "8", ",", "16", ",", "32"}], "}"}]}], 
+  "]"}]], "Input",
+ CellChangeTimes->{{3.760363128447435*^9, 3.760363132769157*^9}, {
+  3.7603631653597803`*^9, 3.760363170334715*^9}}],
+
+Cell["Mix of primes", "Text",
+ CellChangeTimes->{{3.7603616583983917`*^9, 3.7603616610215893`*^9}, {
+  3.760363203519*^9, 3.760363205821164*^9}}],
+
+Cell[BoxData[
+ RowBox[{"qInit", "[", 
+  RowBox[{"5", ",", 
+   RowBox[{"{", 
+    RowBox[{"2", ",", "6", ",", "12", ",", "36", ",", "72"}], "}"}]}], 
+  "]"}]], "Input",
+ CellChangeTimes->{{3.7603631719055862`*^9, 3.760363194377685*^9}}]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{808, 911},
+WindowMargins->{{479, Automatic}, {Automatic, 19}},
+FrontEndVersion->"10.1 for Linux x86 (64-bit) (March 23, 2015)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 162, 2, 45, "Subsection"],
+Cell[745, 26, 395, 7, 77, "Text"],
+Cell[CellGroupData[{
+Cell[1165, 37, 101, 1, 35, "Subsubsection"],
+Cell[1269, 40, 154, 2, 33, "Text"],
+Cell[1426, 44, 221, 5, 32, "Input"],
+Cell[1650, 51, 114, 1, 33, "Text"],
+Cell[1767, 54, 225, 5, 32, "Input"],
+Cell[1995, 61, 154, 2, 33, "Text"],
+Cell[2152, 65, 225, 5, 32, "Input"],
+Cell[2380, 72, 155, 2, 33, "Text"],
+Cell[2538, 76, 274, 7, 32, "Input"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[2849, 88, 102, 1, 35, "Subsubsection"],
+Cell[2954, 91, 102, 1, 33, "Text"],
+Cell[3059, 94, 198, 5, 32, "Input"],
+Cell[3260, 101, 97, 1, 33, "Text"],
+Cell[3360, 104, 301, 7, 32, "Input"],
+Cell[3664, 113, 95, 1, 33, "Text"],
+Cell[3762, 116, 197, 5, 32, "Input"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[3996, 126, 104, 1, 35, "Subsubsection"],
+Cell[4103, 129, 103, 1, 33, "Text"],
+Cell[4209, 132, 253, 6, 32, "Input"],
+Cell[4465, 140, 150, 2, 33, "Text"],
+Cell[4618, 144, 253, 6, 32, "Input"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4908, 155, 105, 1, 35, "Subsubsection"],
+Cell[5016, 158, 103, 1, 33, "Text"],
+Cell[5122, 161, 282, 7, 32, "Input"],
+Cell[5407, 170, 145, 2, 33, "Text"],
+Cell[5555, 174, 234, 6, 32, "Input"]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)

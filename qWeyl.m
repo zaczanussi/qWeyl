@@ -53,8 +53,6 @@ primelist::usage = "this is a global variable; lists the prime numbers that are 
 
 factorlist::usage = "this is a global variable; lists the factors that go into nlist."
 
-FourierUBlock::usage = "this should only be temporary";
-
 FourierU::usage= "";
 
 SFourier::usage = "";
@@ -70,6 +68,8 @@ phiDilation::usage = "";
 DilationU::usage = "";
 
 DilationUSparse::usage = "";
+
+phiChirp::usage = "";
 
 vecMod::usage = "This computes the modulo of a list where each component is reduced mod it's corresponding element in nlist. 
 	It also happens to reduce a matrix's rows mod nlist, which is convenient.";
@@ -278,25 +278,23 @@ phiDilation[l_, m_] := 1
 
 phiDilation[lambda_] := phiDilation[lambda[[;;numSystems]], lambda[[numSystems+1;;]]]
 
-Id = IdentityMatrix[2];
-
 phiChirp[c_, k_] := 
- Exp[Pi I k.(Id + Inverse[Nmat]).c.(Id + Nmat).k]
+ Exp[Pi I k.(IdentityMatrix[numSystems] + Inverse[Nmat]).c.(IdentityMatrix[numSystems] + Nmat).k]
 
-ChirpU12[c_] := 
- matrix[Table[
-   If[l1 == k1 && l2 == k2, phiChirp[c, {l1, l2}], 0], {l1, 0, 
-    p - 1}, {k1, 0, p - 1}, {l2, 0, p - 1}, {k2, 0, p - 1}], {ket[q1],
-    bra[q1], ket[q2], bra[q2]}]
-
-SChirp[c_] := 
- ArrayFlatten[{{IdentityMatrix[2], 
-    ConstantArray[0, {2, 2}]}, {{{c, 0}, {0, c}}, 
-    IdentityMatrix[2]}}]
+ChirpU[c_] := 
+ matrix[SparseArray[
+   Flatten[Table[
+       Riffle[Table[j[i], {i, numSystems}] + 1, 
+         Table[j[i], {i, numSystems}] + 1] -> 
+        phiChirp[c, Table[j[i], {i, numSystems}]], ##] & @@ 
+     Evaluate[Table[{j[i], 0, nlist[[i]] - 1}, {i, 1, numSystems}]]]],
+   Riffle[Table[ket[Symbol["q" <> ToString[i]]], {i, numSystems}], 
+   Table[bra[Symbol["q" <> ToString[i]]], {i, numSystems}]]]
 
 SChirp[C_?ListQ] := 
- ArrayFlatten[{{IdentityMatrix[2], ConstantArray[0, {2, 2}]}, {C, 
-    IdentityMatrix[2]}}]
+ ArrayFlatten[{{IdentityMatrix[numSystems], 
+    ConstantArray[0, {numSystems, numSystems}]}, {C, 
+    IdentityMatrix[numSystems]}}]
 
 InverseMod[val_, p_] := If[GCD[val, p] == 1, PowerMod[val, -1, p], 0]
 SetAttributes[InverseMod, Listable];

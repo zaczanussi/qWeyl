@@ -76,14 +76,27 @@ vecMod::usage = "This computes the modulo of a list where each component is redu
 
 sub::usage = "This is a shortcut to create a new symbol; sub[var,i] creates symbol vari for use in equations";
 
+(*Stone-von Neumann Operators*)
+
+wJ::usage = "";
+
+thetaJ::usage = "";
+
+position::usage = "If given a number, returns the position observable on that system. If given a binary list, returns an observable on system that 
+  is identity on systems corresponding to 0's and position on systems corresponding to 1's";
+
+momentum::usage = "";
+
+shiftU::usage = "";
+
+boostV::usage = "";
+
 qWeyl`helpMe := "This package implements the Weyl representation 
 of the Heisenberg group H(G) for a finite abelian group G";
 
 Begin["`Private`"]
 
 testfcn[c_] := dimension[Subscript[q,c]]
-(* p = 4;
- *)
 
 ranlist[sys_, num_] := RandomInteger[{0, nlist[[sys]] - 1}, num]
 
@@ -307,20 +320,38 @@ SetAttributes[InverseMod, Listable];
 
 (*Stone-von Neumann Operators*)
 
-thetaJ[j_] := Arg[Exp[I 2 Pi j (nlist[[1]] - 1)/nlist[[1]]]]
+thetaJ[syst_,j_] := Arg[Exp[I 2 Pi j (nlist[[syst]] - 1)/nlist[[syst]]]]
 
-wJ[j_] := Exp[I 2 Pi j / nlist[[1]]]
+wJ[syst_,j_] := Exp[I 2 Pi j / nlist[[syst]]]
 
-momentum[] := 
- matrix[Table[
-   Sum[thetaJ[j] wJ[j]^(i - k)/nlist[[1]], {j, 0, 
-     nlist[[1]] - 1}], {i, 0, nlist[[1]] - 1}, {k, 0, 
-    nlist[[1]] - 1}], {ket[sub[q, 1]], bra[sub[q, 1]]}]
+momentum[syst_?IntegerQ] := 
+ matrix[Chop@N@Table[
+   Sum[thetaJ[syst,j] wJ[syst,j]^(i - k)/nlist[[syst]], {j, 0, 
+     nlist[[syst]] - 1}], {i, 0, nlist[[syst]] - 1}, {k, 0, 
+    nlist[[syst]] - 1}], {ket[Subscript[q, syst]], bra[Subscript[q, syst]]}]
 
-position[] := 
+position[syst_?IntegerQ] := 
  matrix[DiagonalMatrix[
-   Table[thetaJ[j], {j, 0, nlist[[1]] - 1}]], {ket[sub[q, 1]], 
-   bra[sub[q, 1]]}]
+   Table[2 Pi j /nlist[[syst]], {j, 0, nlist[[syst]] - 1}]], {ket[Subscript[q, syst]], 
+   bra[Subscript[q, syst]]}]
+
+momentum[systList_?ListQ] := 
+ Fold[diracMatrixProduct, 
+  Table[If[systList[[j]] == 1, momentum[j], 
+    identityMatrix[Subscript[q, j]]], {j, numSystems}]]
+
+position[systList_?ListQ] := 
+ Fold[diracMatrixProduct, 
+  Table[If[systList[[i]] == 1, position[i], 
+    identityMatrix[Subscript[q, i]]], {i, numSystems}]]
+
+shiftU[shifts_] := 
+ Fold[diracMatrixProduct, Table[X[i, shifts[[i]]], {i, numSystems}]]
+
+boostV[boosts_] := 
+ Fold[diracMatrixProduct, Table[Z[i, boosts[[i]]], {i, numSystems}]]
+
+
 
 End[]
 

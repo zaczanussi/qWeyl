@@ -281,6 +281,12 @@ phiDilation[lambda_] := phiDilation[lambda[[;;numSystems]], lambda[[numSystems+1
 phiChirp[c_, k_] := 
  Exp[Pi I k.(IdentityMatrix[numSystems] + Inverse[Nmat]).c.(IdentityMatrix[numSystems] + Nmat).k]
 
+ChirpU12[c_] := 
+ matrix[Table[
+   If[l1 == k1 && l2 == k2, phiChirp[c, {l1, l2}], 0], {l1, 0, 
+    p - 1}, {k1, 0, p - 1}, {l2, 0, p - 1}, {k2, 0, p - 1}], {ket[q1],
+    bra[q1], ket[q2], bra[q2]}]
+
 ChirpU[c_] := 
  matrix[SparseArray[
    Flatten[Table[
@@ -299,6 +305,22 @@ SChirp[C_?ListQ] :=
 InverseMod[val_, p_] := If[GCD[val, p] == 1, PowerMod[val, -1, p], 0]
 SetAttributes[InverseMod, Listable];
 
+(*Stone-von Neumann Operators*)
+
+thetaJ[j_] := Arg[Exp[I 2 Pi j (nlist[[1]] - 1)/nlist[[1]]]]
+
+wJ[j_] := Exp[I 2 Pi j / nlist[[1]]]
+
+momentum[] := 
+ matrix[Table[
+   Sum[thetaJ[j] wJ[j]^(i - k)/nlist[[1]], {j, 0, 
+     nlist[[1]] - 1}], {i, 0, nlist[[1]] - 1}, {k, 0, 
+    nlist[[1]] - 1}], {ket[sub[q, 1]], bra[sub[q, 1]]}]
+
+position[] := 
+ matrix[DiagonalMatrix[
+   Table[thetaJ[j], {j, 0, nlist[[1]] - 1}]], {ket[sub[q, 1]], 
+   bra[sub[q, 1]]}]
 
 End[]
 

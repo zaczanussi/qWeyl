@@ -80,7 +80,9 @@ sub::usage = "This is a shortcut to create a new symbol; sub[var,i] creates symb
 
 wJ::usage = "";
 
-thetaJ::usage = "";
+thetaJ::usage = "goes inside momentum; Arg(wj^n-1)=thetaJ";
+
+phiJ::usage = "goes inside position; Arg(w^j)=phiJ";
 
 position::usage = "If given a number, returns the position observable on that system. If given a binary list, returns an observable on system that 
   is identity on systems corresponding to 0's and position on systems corresponding to 1's";
@@ -90,6 +92,17 @@ momentum::usage = "";
 shiftU::usage = "";
 
 boostV::usage = "";
+
+subtractMean::usage = "X^0";
+
+generateR::usage = "";
+
+meanVector::usage = "m";
+
+covarianceMatrix::usage = "B_S(X)";
+
+variance::usage = "D_S(X)";
+
 
 qWeyl`helpMe := "This package implements the Weyl representation 
 of the Heisenberg group H(G) for a finite abelian group G";
@@ -320,7 +333,16 @@ SetAttributes[InverseMod, Listable];
 
 (*Stone-von Neumann Operators*)
 
+SmallCircle[X_, Y_] := 1/2 (X ** Y + Y ** X)
+
+subtractMean[state_, opt_] := 
+ opt - trace[state ** opt] identityMatrix[opt[[2]]]
+
+(*goes inside momentum, Arg(wj^n-1)=thetaJ*)
 thetaJ[syst_,j_] := Arg[Exp[I 2 Pi j (nlist[[syst]] - 1)/nlist[[syst]]]]
+
+(*goes inside position, Arg(w^j)=phiJ*)
+phiJ[syst_, j_] := Arg[Exp[I 2 Pi j/nlist[[syst]]]]
 
 wJ[syst_,j_] := Exp[I 2 Pi j / nlist[[syst]]]
 
@@ -332,7 +354,7 @@ momentum[syst_?IntegerQ] :=
 
 position[syst_?IntegerQ] := 
  matrix[DiagonalMatrix[
-   Table[2 Pi j /nlist[[syst]], {j, 0, nlist[[syst]] - 1}]], {ket[Subscript[q, syst]], 
+   Table[phiJ[syst,j], {j, 0, nlist[[syst]] - 1}]], {ket[Subscript[q, syst]], 
    bra[Subscript[q, syst]]}]
 
 momentum[systList_?ListQ] := 
@@ -351,7 +373,29 @@ shiftU[shifts_] :=
 boostV[boosts_] := 
  Fold[diracMatrixProduct, Table[Z[i, boosts[[i]]], {i, numSystems}]]
 
+generateR[] := 
+ Join[Table[position[UnitVector[numSystems, i]], {i, numSystems}], 
+  Table[momentum[UnitVector[numSystems, i]], {i, numSystems}]]
 
+meanVector[state_] := 
+ Module[{R = generateR[]}, 
+  Table[trace[state ** R[[i]]], {i, 2 numSystems}]]
+
+covarianceMatrix[state_, obs_] := 
+ Table[trace[
+   state ** (subtractMean[state,obs[[j]]]\[SmallCircle]subtractMean[
+       state,obs[[k]]])], {j, numSystems}, {k, numSystems}]
+
+variance[state_, obs_] := trace[state ** subtractMean[state, obs]^2]
+
+Unprotect[Power]
+Power[state_?matrixQ, number_?IntegerQ] := 
+ Fold[diracMatrixProduct, Table[state, {i, number}]]
+Protect[Power]
+
+commutatorMatrix[state_, obs_] := 
+ I Table[trace[state ** commutator[obs[[j]], obs[[k]]]], {j, 
+    numSystems}, {k, numSystems}]
 
 End[]
 

@@ -36,6 +36,8 @@ pi::usage = "The pi operator";
 
 piSparse::usage = "";
 
+WSparse::usage = "This is Gross' w (Weyl) operator, implemented sparsely using piSparse";
+
 AngleBracket::usage = "";
 
 lim::usage = "";
@@ -100,6 +102,8 @@ generateR::usage = "";
 meanVector::usage = "m";
 
 covarianceMatrix::usage = "B_S(X)";
+
+commutatorMatrix::usage = "C_S(X)";
 
 variance::usage = "D_S(X)";
 
@@ -204,6 +208,8 @@ Z[syst_, boost_?IntegerQ] :=
      dimension[syst] - 1}]], {ket[syst], bra[syst]}]
 
 Z[syst_?IntegerQ, boost_?IntegerQ] := Z[Subscript[q, syst], boost]
+
+WSparse[m_, l_] := piSparse[{l}, {m}] \[Chi][1, -1/2 m l]
 
 pi[lambda_] := Fold[diracMatrixProduct, 
  Table[Z[i, lambda[[numSystems + i]]] ** X[i, lambda[[i]]], {i, 
@@ -384,7 +390,7 @@ meanVector[state_] :=
 covarianceMatrix[state_, obs_] := 
  Table[trace[
    state ** (subtractMean[state,obs[[j]]]\[SmallCircle]subtractMean[
-       state,obs[[k]]])], {j, numSystems}, {k, numSystems}]
+       state,obs[[k]]])], {j, 2numSystems}, {k, 2numSystems}]
 
 variance[state_, obs_] := trace[state ** subtractMean[state, obs]^2]
 
@@ -395,7 +401,7 @@ Protect[Power]
 
 commutatorMatrix[state_, obs_] := 
  I Table[trace[state ** commutator[obs[[j]], obs[[k]]]], {j, 
-    numSystems}, {k, numSystems}]
+    2numSystems}, {k, 2numSystems}]
 
 End[]
 

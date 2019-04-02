@@ -107,7 +107,12 @@ commutatorMatrix::usage = "C_S(X)";
 
 variance::usage = "D_S(X)";
 
+(*Phase Space*)
 
+lineInPhaseSpace::usage = "Gives the coordinates of a line through point in the lattice GxG, where G is 
+the group corresponding to the subsystem syst. ";
+
+q::usage = "A protected character designed to make it easy to get access to a subsystem; q[i] is the ith subsystem.";
 qWeyl`helpMe := "This package implements the Weyl representation 
 of the Heisenberg group H(G) for a finite abelian group G";
 
@@ -125,11 +130,17 @@ qInit[numberOfSystems_?IntegerQ, listOfFactors_?ListQ] := (
  Table[{primelist[[i]], 
    Table[IntegerExponent[nlist[[j]], primelist[[i]]], {j, 
      numSystems}]}, {i, Length[primelist]}];
+     Unprotect[q];
   Map[(Subscript[q, #] := Symbol["q" <> ToString[#]]) &, 
    Table[i, {i, numSystems}]]; 
+   Map[(q[#] := Symbol["q" <> ToString[#]]) &, 
+   Table[i, {i, numSystems}]]; 
+   Protect[q];
   Map[setModeType[Subscript[q, #], {discrete, listOfFactors[[#]]}] &, 
    Table[i, {i, numSystems}]]; 
   setSystem[Table[Subscript[q, i], {i, numSystems}]])
+
+Protect[q]
 
 (*Finite Abelian Group Stuff*)
 
@@ -200,7 +211,7 @@ X[syst_, shift_?IntegerQ] :=
      dimension[syst]}]]] 
 
 X[system_?IntegerQ, shift_?IntegerQ] := 
- X[Subscript[q, system], shift] 
+ X[q[system], shift] 
 
 Z[syst_, boost_?IntegerQ] := 
  matrix[DiagonalMatrix[
@@ -396,12 +407,18 @@ variance[state_, obs_] := trace[state ** subtractMean[state, obs]^2]
 
 Unprotect[Power]
 Power[state_?matrixQ, number_?IntegerQ] := 
- Fold[diracMatrixProduct, Table[state, {i, number}]]
+ If[number!=0,Fold[diracMatrixProduct, Table[state, {i, number}]],identityMatrix[state[[2]]]]
 Protect[Power]
 
 commutatorMatrix[state_, obs_] := 
  I Table[trace[state ** commutator[obs[[j]], obs[[k]]]], {j, 
     2numSystems}, {k, 2numSystems}]
+
+(*Phase Space*)
+
+lineInPhaseSpace[syst_, slope_, point_: {0, 0}] := 
+ Table[{Mod[slope p + point[[1]], nlist[[syst]]], 
+   Mod[p + point[[2]], nlist[[syst]]]}, {p, 0, nlist[[syst]] - 1}]
 
 End[]
 

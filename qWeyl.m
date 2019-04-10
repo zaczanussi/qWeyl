@@ -119,6 +119,8 @@ gaussianKet::usage = "";
 
 charfcn::usage = "";
 
+wigner::usage = "";
+
 Harper::usage = "";
 
 minUncerVal::usage = "";
@@ -474,6 +476,11 @@ charfcn[state_] :=
    trace[state ** hc[WSparse[i, j]]], {i, 0, nlist[[1]] - 1}, {j, 0, 
     nlist[[1]] - 1}]
 
+wigner[state_] := 
+ 1/nlist[[1]] Table[
+   trace[state ** ASparse[i, j]], {i, 0, nlist[[1]] - 1}, {j, 0, 
+    nlist[[1]] - 1}]
+
 Harper[] := 
  Module[{harp = (Z[1, 1] + hc[Z[1, 1]] + X[1, 1] + hc[X[1, 1]])/4}, 
   matrix[Chop@N[harp[[1]]], harp[[2]]]]
@@ -484,7 +491,7 @@ minUncerVec[check_: 1] :=
  Module[{gam = normalizedEigensystem[Harper[]][[1, 1]]}, (If[
     check == 1, Print[gam],]; matrix[Abs[gam[[1]]], gam[[2]]])]
 
- ABstate[alpha_, beta_, minUncerVect_: minUncerVec[0]] := 
+ABstate[alpha_, beta_, minUncerVect_: minUncerVec[0]] := 
  Z[1, alpha] ** X[1, beta] ** minUncerVect
 
 

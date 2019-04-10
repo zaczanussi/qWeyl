@@ -18,6 +18,8 @@ adjugate::usage = "";
 
 adjointEndo::usage = "";
 
+symp::usage = "The symplectic bracket, usually done via vec1 ~symp~ vec2";
+
 (*qWeyl*)
 
 qInit::usage = "This function initializes your Hilbert space. numSystems must be a natural and listOfFactors must be a list (even if it's just {3})";
@@ -37,6 +39,8 @@ pi::usage = "The pi operator";
 piSparse::usage = "";
 
 WSparse::usage = "This is Gross' w (Weyl) operator, implemented sparsely using piSparse";
+
+ASparse::usage = "Phase Space Point Operator";
 
 AngleBracket::usage = "";
 
@@ -106,6 +110,23 @@ covarianceMatrix::usage = "B_S(X)";
 commutatorMatrix::usage = "C_S(X)";
 
 variance::usage = "D_S(X)";
+
+ASparse::usage = "";
+
+indicatorFcn::usage = "";
+
+gaussianKet::usage = "";
+
+charfcn::usage = "";
+
+Harper::usage = "";
+
+minUncerVal::usage = "";
+
+minUncerVec::usage = "";
+
+ABstate::usage = "";
+
 
 (*Phase Space*)
 
@@ -196,6 +217,7 @@ inverseHp[A_, primePos_] :=
 
 adjointEndo[A_] := Nmat.Transpose[A].Inverse[Nmat]
 
+symp[vec1_, vec2_] := vec1.SFourier[Length[vec1]/2].vec2
 
 (*Weyl Stuff*)
 
@@ -203,7 +225,7 @@ adjointEndo[A_] := Nmat.Transpose[A].Inverse[Nmat]
 
 \[Chi][syst_?IntegerQ,x_] := \[Chi][Subscript[q,syst],x]
 
-\[Chi][x_] := Product[\[Chi][i,x[[i]]],{i,numSystems}]
+(* \[Chi][x_] := Product[\[Chi][i,x[[i]]],{i,numSystems}]*)
 
 X[syst_, shift_?IntegerQ] := 
  matrix[op[permutation, syst, 
@@ -244,6 +266,26 @@ piSparse[l_, m_] :=
 
 piSparse[lambda_] := 
  piSparse[lambda[[;; numSystems]], lambda[[numSystems + 1 ;;]]]
+
+AHelp[glist_, llist_] := 
+ Riffle[vecMod[glist + 2 llist] + 1, vecMod[-glist] + 1]
+
+ASparse[m_, l_] := 
+ matrix[SparseArray[
+   Flatten[Table[
+       AHelp[Table[g[i], {i, numSystems}], 
+         l] -> \[LeftAngleBracket]Table[g[i], {i, numSystems}], 
+          2 m\[RightAngleBracket] \[LeftAngleBracket]2 l, 
+          m\[RightAngleBracket], ##] & @@ 
+     Evaluate[Table[{g[i], 0, nlist[[i]] - 1}, {i, numSystems}]]], 
+   Riffle[nlist, nlist]], 
+  Riffle[Table[ket[q[i]], {i, numSystems}], 
+   Table[bra[q[i]], {i, numSystems}]]]
+
+ASparse[lambda_] := 
+ ASparse[lambda[[;; numSystems]], lambda[[numSystems + 1 ;;]]]
+
+ASparse[m_?IntegerQ,l_?IntegerQ] := ASparse[{m},{l}]
 
 AngleBracket[m_, k_] := Exp[2 Pi I m.Inverse[Nmat].k]
 
@@ -417,8 +459,50 @@ commutatorMatrix[state_, obs_] :=
 (*Phase Space*)
 
 lineInPhaseSpace[syst_, slope_, point_: {0, 0}] := 
- Table[{Mod[slope p + point[[1]], nlist[[syst]]], 
-   Mod[p + point[[2]], nlist[[syst]]]}, {p, 0, nlist[[syst]] - 1}]
+ Table[{Mod[slope q + point[[1]], nlist[[syst]]], 
+   Mod[q + point[[2]], nlist[[syst]]]}, {q, 0, nlist[[syst]] - 1}]
+
+indicatorFcn[set_, element_] := If[MemberQ[set, element], 1, 0]
+
+gaussianKet[syst_?IntegerQ, covar_, mean_] := 
+ matrix[1/Sqrt[
+    nlist[[syst]]] Table[\[Chi][syst, j covar  j + mean j], {j, 0, 
+     nlist[[syst]] - 1}], {ket[sub[q, syst]]}]
+
+charfcn[state_] := 
+ 1/nlist[[1]] Table[
+   trace[state ** hc[WSparse[i, j]]], {i, 0, nlist[[1]] - 1}, {j, 0, 
+    nlist[[1]] - 1}]
+
+Harper[] := 
+ Module[{harp = (Z[1, 1] + hc[Z[1, 1]] + X[1, 1] + hc[X[1, 1]])/4}, 
+  matrix[Chop@N[harp[[1]]], harp[[2]]]]
+
+minUncerVal[] := normalizedEigensystem[Harper[]][[1, 2]]
+
+minUncerVec[check_: 1] := 
+ Module[{gam = normalizedEigensystem[Harper[]][[1, 1]]}, (If[
+    check == 1, Print[gam],]; matrix[Abs[gam[[1]]], gam[[2]]])]
+
+ ABstate[alpha_, beta_, minUncerVect_: minUncerVec[0]] := 
+ Z[1, alpha] ** X[1, beta] ** minUncerVect
+
+
+(* Useful Code Snippets that I want to keep *)
+
+
+(* Here is the calculations for characteristic functions for G-Gaussian kets. *)
+charfcn2[theta_, m_] := 
+ 1/nlist[[1]] Table[(-1)^(i j)
+     indicatorFcn[lineInPhaseSpace[1, 2 theta], {i, j}] \[Chi][1, 
+     m j], {i, 0, nlist[[1]] - 1}, {j, 0, nlist[[1]] - 1}]
+
+charfcn3[theta_, x_] := 
+ 1/nlist[[1]] Table[(-1)^(i j)
+     indicatorFcn[lineInPhaseSpace[1, 2 theta], {i, j}] \[Chi][
+     1, ( x1 i + x2 j)], {i, 0, nlist[[1]] - 1}, {j, 0, 
+    nlist[[1]] - 1}]
+
 
 End[]
 

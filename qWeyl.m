@@ -115,6 +115,20 @@ ASparse::usage = "";
 
 indicatorFcn::usage = "";
 
+sympWithSet::usage = "";
+
+phaseSpace::usage = "";
+
+sympComplement::usage = "";
+
+isotropicQ::usage = "";
+
+coisotropicQ::usage = "";
+
+lagrangianQ::usage = "";
+
+subsetState::usage = "";
+
 gaussianKet::usage = "";
 
 charfcn::usage = "";
@@ -273,7 +287,7 @@ AHelp[glist_, llist_] :=
  Riffle[vecMod[glist + 2 llist] + 1, vecMod[-glist] + 1]
 
 ASparse[m_, l_] := 
- matrix[SparseArray[
+ 1/nlist[[1]] matrix[SparseArray[
    Flatten[Table[
        AHelp[Table[g[i], {i, numSystems}], 
          l] -> \[LeftAngleBracket]Table[g[i], {i, numSystems}], 
@@ -461,10 +475,29 @@ commutatorMatrix[state_, obs_] :=
 (*Phase Space*)
 
 lineInPhaseSpace[syst_, slope_, point_: {0, 0}] := 
- Table[{Mod[slope q + point[[1]], nlist[[syst]]], 
-   Mod[q + point[[2]], nlist[[syst]]]}, {q, 0, nlist[[syst]] - 1}]
+ If[slope == Infinity, 
+  Table[{Mod[ q + point[[1]], nlist[[syst]]], 
+    Mod[point[[2]], nlist[[syst]]]}, {q, 0, nlist[[syst]] - 1}], 
+  Table[{Mod[slope q + point[[1]], nlist[[syst]]], 
+    Mod[q + point[[2]], nlist[[syst]]]}, {q, 0, nlist[[syst]] - 1}]]
 
 indicatorFcn[set_, element_] := If[MemberQ[set, element], 1, 0]
+
+sympWithSet[subset1_, subset2_] := 
+ AllTrue[Flatten[Outer[symp, subset1, subset2, 1]], Mod[#,nlist[[1]]] == 0 &]
+
+phaseSpace[] := 
+ Flatten[Outer[List, Range[0, nlist[[1]] - 1], 
+   Range[0, nlist[[1]] - 1]], 1]
+
+sympComplement[set_] := 
+ Select[phaseSpace[], sympWithSet[set, {#}] == True &]
+
+isotropicQ[set_] := SubsetQ[sympComplement[set], set]
+
+coisotropicQ[set_] := SubsetQ[set, sympComplement[set]]
+
+lagrangianQ[set_] := isotropicQ[set] && coisotropicQ[set]
 
 gaussianKet[syst_?IntegerQ, covar_, mean_] := 
  matrix[1/Sqrt[
@@ -482,17 +515,25 @@ wigner[state_] :=
     nlist[[1]] - 1}]
 
 Harper[] := 
- Module[{harp = (Z[1, 1] + hc[Z[1, 1]] + X[1, 1] + hc[X[1, 1]])/4}, 
+ Module[{harp},harp := (Z[1, 1] + hc[Z[1, 1]] + X[1, 1] + hc[X[1, 1]])/4 ;
   matrix[Chop@N[harp[[1]]], harp[[2]]]]
 
-minUncerVal[] := normalizedEigensystem[Harper[]][[1, 2]]
+minUncerVal[] := 
+ Module[{sys}, sys := normalizedEigensystem[Harper[]]; 
+  sys[[Ordering[sys[[;; , 2]], nlist[[1]], Greater][[1]], 2]]]
 
 minUncerVec[check_: 1] := 
- Module[{gam = normalizedEigensystem[Harper[]][[1, 1]]}, (If[
-    check == 1, Print[gam],]; matrix[Abs[gam[[1]]], gam[[2]]])]
+ Module[{gam, sys}, (sys := normalizedEigensystem[Harper[]]; 
+   gam := sys[[Ordering[sys[[;; , 2]], nlist[[1]], Greater][[1]], 1]];
+    If[check == 1, Print[gam],]; matrix[Abs[gam[[1]]], gam[[2]]])]
 
-ABstate[alpha_, beta_, minUncerVect_: minUncerVec[0]] := 
- Z[1, alpha] ** X[1, beta] ** minUncerVect
+ABstate[alpha_, beta_(* , minUncerVect_: minUncerVec[0] *)] := 
+ Z[1, alpha] ** X[1, beta] ** minUncerVec[0]
+
+subsetState[line_] := 
+ 1/Length[line] Sum[
+   ABstate[line[[i, 1]], line[[i, 2]]] ** 
+    hc[ABstate[line[[i, 1]], line[[i, 2]]]], {i, 1, Length[line]}]
 
 
 (* Useful Code Snippets that I want to keep *)

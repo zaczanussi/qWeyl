@@ -135,7 +135,8 @@ charfcn::usage = "";
 
 wigner::usage = "";
 
-Harper::usage = "";
+Harper::usage = "Generates the Harper operator H_theta as given in Hashimoto2019. Theta is Pi / 4 by default, but can be
+  any value in the range [0,Pi/2].";
 
 minUncerVal::usage = "";
 
@@ -143,15 +144,35 @@ minUncerVec::usage = "";
 
 ABstate::usage = "";
 
+scalarMultipleQ::usage = "If the two vectors are scalar multiples of each other, return the
+  scalar. If not, prints a message informing you of this. Put the larger vector first to get a value greater than 1.";
+
+vectorSolve::usage = "Wraps up LinearSolve to be more convenient for kets; put b in the first component, and the vector
+  that makes up m in a list in the second component.";
 
 (*Phase Space*)
 
 lineInPhaseSpace::usage = "Gives the coordinates of a line through point in the lattice GxG, where G is 
-the group corresponding to the subsystem syst. ";
+the group corresponding to the subsystem syst. Right now, the line is of the form (theta q , q), q in Z_d. 
+Can set theta = Infinity to get a horizontal line.";
 
 q::usage = "A protected character designed to make it easy to get access to a subsystem; q[i] is the ith subsystem.";
 qWeyl`helpMe := "This package implements the Weyl representation 
 of the Heisenberg group H(G) for a finite abelian group G";
+
+(*Hermite-Gaussians*)
+
+generateG::usage = "";
+
+generateHarperFunctions::usage = "";
+
+generateHarperValues::usage = "";
+
+(*Plotting*)
+
+ketPlot::usage = "";
+
+ketLinePlot::usage = "";
 
 Begin["`Private`"]
 
@@ -167,12 +188,12 @@ qInit[numberOfSystems_?IntegerQ, listOfFactors_?ListQ] := (
  Table[{primelist[[i]], 
    Table[IntegerExponent[nlist[[j]], primelist[[i]]], {j, 
      numSystems}]}, {i, Length[primelist]}];
-     Unprotect[q];
+  Unprotect[q];
   Map[(Subscript[q, #] := Symbol["q" <> ToString[#]]) &, 
    Table[i, {i, numSystems}]]; 
-   Map[(q[#] := Symbol["q" <> ToString[#]]) &, 
+  Map[(q[#] := Symbol["q" <> ToString[#]]) &, 
    Table[i, {i, numSystems}]]; 
-   Protect[q];
+  Protect[q];
   Map[setModeType[Subscript[q, #], {discrete, listOfFactors[[#]]}] &, 
    Table[i, {i, numSystems}]]; 
   setSystem[Table[Subscript[q, i], {i, numSystems}]])
@@ -421,6 +442,12 @@ phiJ[syst_, j_] := Arg[Exp[I 2 Pi j/nlist[[syst]]]]
 
 wJ[syst_,j_] := Exp[I 2 Pi j / nlist[[syst]]]
 
+unitKet[num_] := matrix[UnitVector[nlist[[1]], num], {ket[q[1]]}]
+
+vjKet[num_] := 
+ 1/Sqrt[nlist[[1]]] matrix[
+   Table[wJ[1, n], {n, 0, nlist[[1]] - 1}], {ket[q[1]]}]
+
 momentum[syst_?IntegerQ] := 
  matrix[Chop@N@Table[
    Sum[thetaJ[syst,j] wJ[syst,j]^(i - k)/nlist[[syst]], {j, 0, 
@@ -514,8 +541,10 @@ wigner[state_] :=
    trace[state ** ASparse[i, j]], {i, 0, nlist[[1]] - 1}, {j, 0, 
     nlist[[1]] - 1}]
 
-Harper[] := 
- Module[{harp},harp := (Z[1, 1] + hc[Z[1, 1]] + X[1, 1] + hc[X[1, 1]])/4 ;
+Harper[theta_: Pi/4] := 
+ Module[{harp}, 
+  harp := (Sin[theta] (Z[1, 1] + hc[Z[1, 1]]) + 
+      Cos[theta] (X[1, 1] + hc[X[1, 1]]))/2;
   matrix[Chop@N[harp[[1]]], harp[[2]]]]
 
 minUncerVal[] := 
@@ -528,13 +557,107 @@ minUncerVec[check_: 1] :=
     If[check == 1, Print[gam],]; matrix[Abs[gam[[1]]], gam[[2]]])]
 
 ABstate[alpha_, beta_(* , minUncerVect_: minUncerVec[0] *)] := 
- Z[1, alpha] ** X[1, beta] ** minUncerVec[0]
+ Z[1, alpha] ** X[1, beta] ** minUncerVec[0] (*Should I switch Z and X here?*)
 
 subsetState[line_] := 
  1/Length[line] Sum[
    ABstate[line[[i, 1]], line[[i, 2]]] ** 
     hc[ABstate[line[[i, 1]], line[[i, 2]]]], {i, 1, Length[line]}]
 
+
+
+scalarMultipleQ[vec1_?ListQ, vec2_?ListQ] := 
+ If[VectorAngle[vec1, vec2] == 0, Norm[vec1]/Norm[vec2], 
+  Print["The vectors are not multiples of each other"]]
+
+scalarMultipleQ[vec1_?matrixQ, vec2_?matrixQ] := 
+ scalarMultipleQ[vec1[[1]], vec2[[1]]]
+
+vectorSolve[b_, vecs_?ListQ] := 
+ LinearSolve[Table[vecs[[num, 1]], {num, 1, Length[vecs]}], b]
+vectorSolve[b_?matrixQ, vecs_?ListQ] := 
+ LinearSolve[Table[vecs[[num, 1]], {num, 1, Length[vecs]}], b[[1]]]
+
+(*Hermite-Gaussians*)
+
+generateG[] := 
+ matrix[SparseArray[
+    Join[Table[{x + 1, Mod[x + 1, nlist[[1]]] + 1} -> 1, {x, 0, 
+       nlist[[1]] - 1}], 
+     Table[{x + 1, Mod[x - 1, nlist[[1]]] + 1} -> 1, {x, 0, 
+       nlist[[1]] - 1}], 
+     Table[{x + 1, x + 1} -> 2 Cos[2 Pi/nlist[[1]] x], {x, 0, 
+       nlist[[1]] - 1}]]] // N, {ket[q[1]], bra[q[1]]}]
+
+generateHarperFunctions[theta_:Pi / 4] := 
+ Block[{esyst = normalizedEigensystem[Harper[theta]] // Chop}, 
+  pos = Sort[
+    Select[esyst, #[[1, 1, 1]] != 0 &], #1[[2]] > #2[[2]] &];
+  neg = Sort[Select[esyst, #[[1, 1, 1]] == 0 &], #1[[2]] > #2[[2]] &];
+   DeleteDuplicates[
+   Riffle[ReplacePart[pos, 
+      Table[{x + 1, 1} -> 
+        If[pos[[x + 1, 1, 1, 1]] < 0, -pos[[x + 1, 1]], 
+         pos[[x + 1, 1]]], {x, 0, Length[pos] - 1}]], 
+     ReplacePart[neg, 
+      Table[{x + 1, 1} -> 
+        If[neg[[x + 1, 1, 1, 2]] < 0, -neg[[x + 1, 1]], 
+         neg[[x + 1, 1]]], {x, 0, Length[neg] - 1}]]][[;; , 1]]]]
+
+generateHarperValues[theta_:Pi / 4] := 
+ Block[{esyst = normalizedEigensystem[Harper[theta]] // Chop}, 
+  pos = Sort[
+    Select[esyst, #[[1, 1, 1]] != 0 &], #1[[2]] > #2[[2]] &];
+  neg = Sort[Select[esyst, #[[1, 1, 1]] == 0 &], #1[[2]] > #2[[2]] &];
+   DeleteDuplicates[
+   Riffle[ReplacePart[pos, 
+      Table[{x + 1, 1} -> 
+        If[pos[[x + 1, 1, 1, 1]] < 0, -pos[[x + 1, 1]], 
+         pos[[x + 1, 1]]], {x, 0, Length[pos] - 1}]], 
+     ReplacePart[neg, 
+      Table[{x + 1, 1} -> 
+        If[neg[[x + 1, 1, 1, 2]] < 0, -neg[[x + 1, 1]], 
+         neg[[x + 1, 1]]], {x, 0, Length[neg] - 1}]]][[;; , 2]]]]
+
+hermiteGaussian[k_, x_] := 
+ 1/(Surd[Pi, 4] Sqrt[2^k Factorial[k] Exp[x^2]]) HermiteH[k, x]
+
+(*Plotting*)
+
+ketPlot[ket_, squared_: False] := 
+ Block[{ketList = ket[[1]], exponent = If[squared == True, 2, 1]}, 
+  ListPlot[Join[ketList[[Ceiling[nlist[[1]]/2] + 1 ;;]], 
+    ketList[[;; Ceiling[nlist[[1]]/2]]]]^exponent, 
+   DataRange -> {-Floor[nlist[[1]]/2], Ceiling[nlist[[1]]/2] - 1}, 
+   Filling -> Axis]]
+
+ketPlot[kets_?ListQ, squared_: False] := 
+ Block[{ketList = kets[[;; , 1]], 
+   exponent = If[squared == True, 2, 1]}, 
+  ListPlot[Table[
+     Join[ketList[[i]][[Ceiling[nlist[[1]]/2] + 1 ;;]], 
+      ketList[[i]][[;; Ceiling[nlist[[1]]/2]]]], {i, 1, 
+      Length[kets]}]^exponent, 
+   DataRange -> {-Floor[nlist[[1]]/2], Ceiling[nlist[[1]]/2] - 1}, 
+   Filling -> Axis, PlotLegends -> {Range[1, Length[kets]]}]]
+
+ketLinePlot[ket_, squared_: False] := 
+ Block[{ketList = ket[[1]], exponent = If[squared == True, 2, 1]}, 
+  ListLinePlot[
+   Join[ketList[[Ceiling[nlist[[1]]/2] + 1 ;;]], 
+    ketList[[;; Ceiling[nlist[[1]]/2]]]]^exponent, 
+   DataRange -> {-Floor[nlist[[1]]/2], Ceiling[nlist[[1]]/2] - 1}, 
+   Filling -> Axis]]
+
+ketLinePlot[kets_?ListQ, squared_: False] := 
+ Block[{ketList = kets[[;; , 1]], 
+   exponent = If[squared == True, 2, 1]}, 
+  ListLinePlot[Table[
+     Join[ketList[[i]][[Ceiling[nlist[[1]]/2] + 1 ;;]], 
+      ketList[[i]][[;; Ceiling[nlist[[1]]/2]]]], {i, 1, 
+      Length[kets]}]^exponent, 
+   DataRange -> {-Floor[nlist[[1]]/2], Ceiling[nlist[[1]]/2] - 1}, 
+   Filling -> Axis, PlotLegends -> {Range[1, Length[kets]]}]]
 
 (* Useful Code Snippets that I want to keep *)
 

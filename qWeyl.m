@@ -129,6 +129,10 @@ lagrangianQ::usage = "";
 
 subsetState::usage = "";
 
+im::usage = "Use to get the imaginary part of a matrix object";
+
+re::usage = "Use to get the real part of a matrix object";
+
 gaussianKet::usage = "";
 
 charfcn::usage = "";
@@ -173,6 +177,12 @@ generateHarperValues::usage = "";
 ketPlot::usage = "";
 
 ketLinePlot::usage = "";
+
+reorderKet::usage = "";
+
+randomProbDistro::usage = "";
+
+hermiteGaussian::usage = "";
 
 Begin["`Private`"]
 
@@ -564,7 +574,19 @@ subsetState[line_] :=
    ABstate[line[[i, 1]], line[[i, 2]]] ** 
     hc[ABstate[line[[i, 1]], line[[i, 2]]]], {i, 1, Length[line]}]
 
+subsetState[line_, coeffs_] := 
+ Block[{}, 
+  If[Total[coeffs] != 1, 
+   Print["Sum of coefficients is not equal to 1;"],]; 
+  If[Length[line] != Length[coeffs], 
+   Print["The number of elements in line is different than the number \
+of coefficients"],]; 
+  Sum[coeffs[[i]] ABstate[line[[i, 1]], line[[i, 2]]] ** 
+     hc[ABstate[line[[i, 1]], line[[i, 2]]]], {i, 1, Length[line]}]]
 
+re[ket_] := matrix[Re[ket[[1]]], ket[[2]]]
+
+im[ket_] := matrix[Im[ket[[1]]], ket[[2]]]
 
 scalarMultipleQ[vec1_?ListQ, vec2_?ListQ] := 
  If[VectorAngle[vec1, vec2] == 0, Norm[vec1]/Norm[vec2], 
@@ -589,20 +611,23 @@ generateG[] :=
      Table[{x + 1, x + 1} -> 2 Cos[2 Pi/nlist[[1]] x], {x, 0, 
        nlist[[1]] - 1}]]] // N, {ket[q[1]], bra[q[1]]}]
 
-generateHarperFunctions[theta_:Pi / 4] := 
- Block[{esyst = normalizedEigensystem[Harper[theta]] // Chop}, 
-  pos = Sort[
-    Select[esyst, #[[1, 1, 1]] != 0 &], #1[[2]] > #2[[2]] &];
-  neg = Sort[Select[esyst, #[[1, 1, 1]] == 0 &], #1[[2]] > #2[[2]] &];
-   DeleteDuplicates[
+generateHarperFunctions[theta_: Pi/4] := 
+ Block[{esyst = normalizedEigensystem[Harper[theta]] // Chop, pos, 
+   neg}, pos = 
+   Sort[Select[esyst, #[[1, 1, 1]] != 0 &], #1[[2]] > #2[[2]] &];
+  neg = Sort[
+    Select[esyst, #[[1, 1, 1]] == 0 &], #1[[2]] > #2[[2]] &];
+  DeleteDuplicates[
    Riffle[ReplacePart[pos, 
       Table[{x + 1, 1} -> 
-        If[pos[[x + 1, 1, 1, 1]] < 0, -pos[[x + 1, 1]], 
-         pos[[x + 1, 1]]], {x, 0, Length[pos] - 1}]], 
+        If[pos[[x + 1, 1, 1, Ceiling[(Length[esyst])/2]]] < 
+          0, -pos[[x + 1, 1]], pos[[x + 1, 1]]], {x, 0, 
+        Length[pos] - 1}]], 
      ReplacePart[neg, 
       Table[{x + 1, 1} -> 
-        If[neg[[x + 1, 1, 1, 2]] < 0, -neg[[x + 1, 1]], 
-         neg[[x + 1, 1]]], {x, 0, Length[neg] - 1}]]][[;; , 1]]]]
+        If[neg[[x + 1, 1, 1, Ceiling[(Length[esyst])/2]]] < 
+          0, -neg[[x + 1, 1]], neg[[x + 1, 1]]], {x, 0, 
+        Length[neg] - 1}]]][[;; , 1]]]]
 
 generateHarperValues[theta_:Pi / 4] := 
  Block[{esyst = normalizedEigensystem[Harper[theta]] // Chop}, 
@@ -622,7 +647,20 @@ generateHarperValues[theta_:Pi / 4] :=
 hermiteGaussian[k_, x_] := 
  1/(Surd[Pi, 4] Sqrt[2^k Factorial[k] Exp[x^2]]) HermiteH[k, x]
 
+kravchukPoly[s_, n_, z_?IntegerQ] := 
+ Sum[(-2)^k Binomial[z, k] Binomial[s, k] Binomial[n - 1, k]^-1, {k, 
+   0, Min[s, z]}]
+
+kravchukFunc[s_, n_, z_] := (-1)^s/2^
+  Floor[n/2] Sqrt[
+   Binomial[n - 1, s] Binomial[n - 1, z + Floor[n/2]]] kravchukPoly[s,
+    n, z + Floor[n/2]]
+
 (*Plotting*)
+
+reorderKet[ket_] := 
+ Join[ket[[1, Ceiling[nlist[[1]]/2] + 1 ;;]], 
+  ket[[1, ;; Ceiling[nlist[[1]]/2]]]]
 
 ketPlot[ket_, squared_: False] := 
  Block[{ketList = ket[[1]], exponent = If[squared == True, 2, 1]}, 
@@ -673,6 +711,9 @@ charfcn3[theta_, x_] :=
      indicatorFcn[lineInPhaseSpace[1, 2 theta], {i, j}] \[Chi][
      1, ( x1 i + x2 j)], {i, 0, nlist[[1]] - 1}, {j, 0, 
     nlist[[1]] - 1}]
+
+randomProbDistro[length_] := 
+ Normalize[Table[RandomReal[], {i, length}], Total]
 
 
 End[]

@@ -99,6 +99,10 @@ shiftU::usage = "";
 
 boostV::usage = "";
 
+annihilation::usage= "";
+
+creation::usage= "";
+
 subtractMean::usage = "X^0";
 
 generateR::usage = "";
@@ -117,7 +121,7 @@ indicatorFcn::usage = "";
 
 sympWithSet::usage = "";
 
-phaseSpace::usage = "";
+phaseSpace::usage = "The parameter matrix determines whether the phase space is returned as a plane (if true) or as a list of coordinates (if false).";
 
 sympComplement::usage = "";
 
@@ -136,6 +140,8 @@ re::usage = "Use to get the real part of a matrix object";
 gaussianKet::usage = "";
 
 charfcn::usage = "";
+
+invCharfcn::usage = "";
 
 wigner::usage = "";
 
@@ -172,17 +178,31 @@ generateHarperFunctions::usage = "";
 
 generateHarperValues::usage = "";
 
+unitKet::usage = "";
+
+vjKet::usage = "";
+
 (*Plotting*)
+
+reorderKet::usage = "";
 
 ketPlot::usage = "";
 
 ketLinePlot::usage = "";
 
-reorderKet::usage = "";
+reorderCharfcn::usage = "";
+
+blockify::usage = "";
+
+charfcnPlot::usage = "";
 
 randomProbDistro::usage = "";
 
 hermiteGaussian::usage = "";
+
+kravchukPoly::usage = "Here n is the dimension, s is a natural number in {0,...,n-1}, and z is between 0 and 2l, with n = 2l + 1";
+
+kravchukFunc::usage = "Here n is the dimension, s is a natural number in {0,...,n-1}, and z is between -l and l, with n = 2l + 1";
 
 Begin["`Private`"]
 
@@ -289,7 +309,8 @@ Z[syst_, boost_?IntegerQ] :=
 
 Z[syst_?IntegerQ, boost_?IntegerQ] := Z[Subscript[q, syst], boost]
 
-WSparse[m_, l_] := piSparse[{l}, {m}] \[Chi][1, -1/2 m l]
+(*I have added a factor of -1 to this!*)
+WSparse[m_, l_] := piSparse[{l}, {m}] \[Chi][1, -1/2 m l] (-1)^(l m)
 
 pi[lambda_] := Fold[diracMatrixProduct, 
  Table[Z[i, lambda[[numSystems + i]]] ** X[i, lambda[[i]]], {i, 
@@ -456,7 +477,7 @@ unitKet[num_] := matrix[UnitVector[nlist[[1]], num], {ket[q[1]]}]
 
 vjKet[num_] := 
  1/Sqrt[nlist[[1]]] matrix[
-   Table[wJ[1, n], {n, 0, nlist[[1]] - 1}], {ket[q[1]]}]
+   Table[wJ[1, num n], {n, 0, nlist[[1]] - 1}], {ket[q[1]]}]
 
 momentum[syst_?IntegerQ] := 
  matrix[Chop@N@Table[
@@ -478,6 +499,12 @@ position[systList_?ListQ] :=
  Fold[diracMatrixProduct, 
   Table[If[systList[[i]] == 1, position[i], 
     identityMatrix[Subscript[q, i]]], {i, numSystems}]]
+
+annihilation[syst_: 1] := 1/Sqrt[2] (position[syst] + I momentum[syst])
+
+creation[syst_: 1] := 1/Sqrt[2] (position[syst] - I momentum[syst])
+
+number[syst_: 1] := creation[syst] ** annihilation[syst]
 
 shiftU[shifts_] := 
  Fold[diracMatrixProduct, Table[X[i, shifts[[i]]], {i, numSystems}]]
@@ -523,9 +550,9 @@ indicatorFcn[set_, element_] := If[MemberQ[set, element], 1, 0]
 sympWithSet[subset1_, subset2_] := 
  AllTrue[Flatten[Outer[symp, subset1, subset2, 1]], Mod[#,nlist[[1]]] == 0 &]
 
-phaseSpace[] := 
+phaseSpace[matrix_:False] := 
  Flatten[Outer[List, Range[0, nlist[[1]] - 1], 
-   Range[0, nlist[[1]] - 1]], 1]
+   Range[0, nlist[[1]] - 1]], If[matrix==True,0,1]]
 
 sympComplement[set_] := 
  Select[phaseSpace[], sympWithSet[set, {#}] == True &]
@@ -541,10 +568,25 @@ gaussianKet[syst_?IntegerQ, covar_, mean_] :=
     nlist[[syst]]] Table[\[Chi][syst, j covar  j + mean j], {j, 0, 
      nlist[[syst]] - 1}], {ket[sub[q, syst]]}]
 
+(* charfcn[state_] := 
+ 1/nlist[[1]] Table[
+   trace[state ** WSparse[i, j]], {i, 0, nlist[[1]] - 1}, {j, 0, 
+    nlist[[1]] - 1}]
+ *)
+charfcn[state_, i_, j_] := 1/nlist[[1]] trace[state ** WSparse[i, j]]
+
 charfcn[state_] := 
+ Table[charfcn[state, i, j], {i, 0, nlist[[1]] - 1}, {j, 0, 
+   nlist[[1]] - 1}]
+
+charfcnGross[state_] := 
  1/nlist[[1]] Table[
    trace[state ** hc[WSparse[i, j]]], {i, 0, nlist[[1]] - 1}, {j, 0, 
     nlist[[1]] - 1}]
+
+invCharfcn[charfcn_?MatrixQ] := 
+ Sum[hc[WSparse[z[[1]], z[[2]]]] charfcn[[z[[1]] + 1, 
+     z[[2]] + 1]], {z, phaseSpace[]}]
 
 wigner[state_] := 
  1/nlist[[1]] Table[
@@ -567,7 +609,7 @@ minUncerVec[check_: 1] :=
     If[check == 1, Print[gam],]; matrix[Abs[gam[[1]]], gam[[2]]])]
 
 ABstate[alpha_, beta_(* , minUncerVect_: minUncerVec[0] *)] := 
- Z[1, alpha] ** X[1, beta] ** minUncerVec[0] (*Should I switch Z and X here?*)
+ X[1, alpha] ** Z[1, beta] ** minUncerVec[0] (*I switched Z and X, July 15 19*)
 
 subsetState[line_] := 
  1/Length[line] Sum[
@@ -589,8 +631,9 @@ re[ket_] := matrix[Re[ket[[1]]], ket[[2]]]
 im[ket_] := matrix[Im[ket[[1]]], ket[[2]]]
 
 scalarMultipleQ[vec1_?ListQ, vec2_?ListQ] := 
- If[VectorAngle[vec1, vec2] == 0, Norm[vec1]/Norm[vec2], 
-  Print["The vectors are not multiples of each other"]]
+ Which[VectorAngle[vec1, vec2] == 0, Norm[vec1]/Norm[vec2], 
+ VectorAngle[vec1, -vec2] == 0, -Norm[vec1]/Norm[vec2], 
+ True,Print["The vectors are not multiples of each other"]]
 
 scalarMultipleQ[vec1_?matrixQ, vec2_?matrixQ] := 
  scalarMultipleQ[vec1[[1]], vec2[[1]]]
@@ -656,18 +699,49 @@ kravchukFunc[s_, n_, z_] := (-1)^s/2^
    Binomial[n - 1, s] Binomial[n - 1, z + Floor[n/2]]] kravchukPoly[s,
     n, z + Floor[n/2]]
 
+kravKet[s_, n_] := 
+ matrix[kravchukFunc[s, n, #] & /@ 
+   Join[Range[0, Ceiling[n/2] - 1], Range[-Floor[n/2], -1]], {ket[
+    q[1]]}]
+
+xBasis[s_, n_, z_] := (-1)^s kravchukFunc[Floor[n/2] - s, n, z]
+
+xKet[s_, n_] := 
+ matrix[xBasis[s, n, #] & /@ 
+   Join[Range[0, Ceiling[n/2] - 1], Range[-Floor[n/2], -1]], {ket[
+    q[1]]}]
+
 (*Plotting*)
 
 reorderKet[ket_] := 
- Join[ket[[1, Ceiling[nlist[[1]]/2] + 1 ;;]], 
-  ket[[1, ;; Ceiling[nlist[[1]]/2]]]]
+Join[ket[[1, Ceiling[Length[ket[[1]]]/2] + 1 ;;]], 
+ ket[[1, ;; Ceiling[Length[ket[[1]]]/2]]]]
 
-ketPlot[ket_, squared_: False] := 
- Block[{ketList = ket[[1]], exponent = If[squared == True, 2, 1]}, 
-  ListPlot[Join[ketList[[Ceiling[nlist[[1]]/2] + 1 ;;]], 
-    ketList[[;; Ceiling[nlist[[1]]/2]]]]^exponent, 
-   DataRange -> {-Floor[nlist[[1]]/2], Ceiling[nlist[[1]]/2] - 1}, 
-   Filling -> Axis]]
+reorderCharfcn[charfcn_] := 
+ ArrayFlatten[{{charfcn[[Ceiling[nlist[[1]]/2] + 1 ;;, 
+      Ceiling[nlist[[1]]/2] + 1 ;;]], 
+    charfcn[[Ceiling[nlist[[1]]/2] + 1 ;;, ;; 
+       Ceiling[nlist[[1]]/2]]]}, {charfcn[[;; Ceiling[nlist[[1]]/2], 
+      Ceiling[nlist[[1]]/2] + 1 ;;]], 
+    charfcn[[;; Ceiling[nlist[[1]]/2], ;; Ceiling[nlist[[1]]/2]]]}}]
+
+blockify[mat_] := 
+ ArrayFlatten[{{mat[[;; Floor[nlist[[1]]/2] + 1, ;; 
+       Floor[nlist[[1]]/2] + 1]], 
+    Reverse[mat[[;; Floor[nlist[[1]]/2] + 1, 
+       2 ;; Floor[nlist[[1]]/2] + 1]], 2]}, {Reverse[
+     mat[[2 ;; Floor[nlist[[1]]/2] + 1, ;; Floor[nlist[[1]]/2] + 1]]],
+     Reverse[
+     mat[[2 ;; Floor[nlist[[1]]/2] + 1, 
+       2 ;; Floor[nlist[[1]]/2] + 1]], {1, 2}]}}]
+
+ketPlot[ket_, offset_: False, squared_: False] := 
+ Block[{ketList = ket[[1]], exponent = If[squared == True, 2, 1], 
+   off = If[offset == True, 1, 0]}, 
+  ListPlot[Join[ketList[[Ceiling[Length[ket[[1]]]/2] + 1 ;;]], 
+     ketList[[;; Ceiling[Length[ket[[1]]]/2]]]]^exponent, 
+   DataRange -> {-Floor[Length[ket[[1]]]/2] + 0.5 off, 
+     Ceiling[Length[ket[[1]]]/2] - 1 + 0.5 off}, Filling -> Axis,PlotRange -> Full]]
 
 ketPlot[kets_?ListQ, squared_: False] := 
  Block[{ketList = kets[[;; , 1]], 
@@ -696,6 +770,13 @@ ketLinePlot[kets_?ListQ, squared_: False] :=
       Length[kets]}]^exponent, 
    DataRange -> {-Floor[nlist[[1]]/2], Ceiling[nlist[[1]]/2] - 1}, 
    Filling -> Axis, PlotLegends -> {Range[1, Length[kets]]}]]
+
+charfcnPlot[charfcn_] := 
+ Block[{dim = Dimensions[charfcn][[1]], 
+   off = If[Mod[Dimensions[charfcn][[1]], 2] == 0, .5, 0]}, 
+   ListPlot3D[reorderCharfcn[charfcn], PlotRange -> Full, 
+    DataRange -> {{-dim/2 - off, dim/2 - off}, {-dim/2 - off, 
+       dim/2 - off}}]]
 
 (* Useful Code Snippets that I want to keep *)
 

@@ -8,6 +8,12 @@ endomorphismQ::usage = "";
 
 automorphismQ::usage = "";
 
+symplecticQ::usage = "";
+
+generateSymplectic::usage = "Computes a symplectic matrix like in Kaiblinger and Neuhauser.";
+
+selfAdjointEndoQ::usage = "Returns True if endo is a self-adjoint endomorphism of G";
+
 inverseAut::usage = "";
 
 inverseAut2::usage = "";
@@ -71,11 +77,15 @@ SDilation::usage = "";
 
 phiDilation::usage = "";
 
-DilationU::usage = "";
+DilationU::usage = "Don't use this! use DilationUSparse instead. This should probably be deleted soon.";
 
-DilationUSparse::usage = "";
+DilationUSparse::usage = "This is the proper Dilation. A must be an automorphism of the group.";
 
 phiChirp::usage = "";
+
+ChirpU::usage = "C must be a self-adjoint endomorphism of the group. ";
+
+SChirp::usage = "";
 
 vecMod::usage = "This computes the modulo of a list where each component is reduced mod it's corresponding element in nlist. 
 	It also happens to reduce a matrix's rows mod nlist, which is convenient.";
@@ -178,15 +188,19 @@ generateHarperFunctions::usage = "";
 
 generateHarperValues::usage = "";
 
-unitKet::usage = "";
+unitKet::usage = "Gives the standard basis, with 0 begin the first element and nlist[[1]] - 1 being the last. Be careful;
+  currently unitKet and vjKet have a different ordering, so that F|ej> = |v{n-j}> but F|vj> = |ej>.";
 
-vjKet::usage = "";
+vjKet::usage = "Gives the Fourier basis, with 0 being the first element. This might seem like it is ordered backward, but it is like this to 
+  be consistent with the X and Z matrices.";
 
 (*Plotting*)
 
 reorderKet::usage = "";
 
 ketPlot::usage = "";
+
+complexKetPlot::usage = "";
 
 ketLinePlot::usage = "";
 
@@ -256,6 +270,26 @@ automorphismQ[A_] :=
     Mod[Det[A[[(val1 = (Count[factorlist[[i, 2]], x_ /; x == 0] + 
               1)) ;;, val1 ;;]]], primelist[[i]]] != 0, {i, Length[primelist]}], 
    TrueQ]
+
+symplecticQ[mat_] := 
+ Block[{dim = Dimensions[mat][[1]], A, B, C, D}, 
+  A = mat[[;; dim/2, ;; dim/2]]; B = mat[[;; dim/2, dim/2 + 1 ;;]]; 
+  C = mat[[dim/2 + 1 ;;, ;; dim/2]]; 
+  D = mat[[dim/2 + 1 ;;, dim/2 + 1 ;;]];
+  If[vecMod[A.adjointEndo[B]] == vecMod[B.adjointEndo[A]] && 
+    vecMod[C.adjointEndo[D]] == vecMod[D.adjointEndo[C]] && 
+    vecMod[A.adjointEndo[D] - B.adjointEndo[C]] == 
+     IdentityMatrix[dim/2], True, False]]
+
+generateSymplectic[sa_, aut_, B_, theta_] := 
+ Block[{mat = 
+    SChirp[sa.inverseAut[aut]].SDilation[aut].SFourierInv[
+      2].SChirp[-inverseAut[aut].B].SFourier[2].SChirp[-theta]}, 
+  ArrayFlatten[{{vecMod[mat[[;; 2, ;; 2]]], 
+     vecMod[mat[[;; 2, 3 ;;]]]}, {vecMod[mat[[3 ;;, ;; 2]]], 
+     vecMod[mat[[3 ;;, 3 ;;]]]}}]]
+
+selfAdjointEndoQ[endo_] := endo == vecMod[adjointEndo[endo]]
 
 inverseAut[A_] := 
  If[! automorphismQ[A], 
@@ -473,7 +507,7 @@ phiJ[syst_, j_] := Arg[Exp[I 2 Pi j/nlist[[syst]]]]
 
 wJ[syst_,j_] := Exp[I 2 Pi j / nlist[[syst]]]
 
-unitKet[num_] := matrix[UnitVector[nlist[[1]], num], {ket[q[1]]}]
+unitKet[num_] := matrix[UnitVector[nlist[[1]], Mod[num,nlist[[1]]]+1], {ket[q[1]]}]
 
 vjKet[num_] := 
  1/Sqrt[nlist[[1]]] matrix[
@@ -593,23 +627,21 @@ wigner[state_] :=
    trace[state ** ASparse[i, j]], {i, 0, nlist[[1]] - 1}, {j, 0, 
     nlist[[1]] - 1}]
 
-Harper[theta_: Pi/4] := 
- Module[{harp}, 
-  harp := (Sin[theta] (Z[1, 1] + hc[Z[1, 1]]) + 
-      Cos[theta] (X[1, 1] + hc[X[1, 1]]))/2;
+Harper[sys_Integer: 1, theta_: Pi/4] := 
+ Block[{harp = (Sin[theta] (Z[sys, 1] + hc[Z[sys, 1]]) + 
+       Cos[theta] (X[sys, 1] + hc[X[sys, 1]]))/2},
   matrix[Chop@N[harp[[1]]], harp[[2]]]]
 
 minUncerVal[] := 
  Module[{sys}, sys := normalizedEigensystem[Harper[]]; 
   sys[[Ordering[sys[[;; , 2]], nlist[[1]], Greater][[1]], 2]]]
 
-minUncerVec[check_: 1] := 
- Module[{gam, sys}, (sys := normalizedEigensystem[Harper[]]; 
+minUncerVec[theta_: Pi/4(* , check_: 0 *)] := 
+ Module[{gam, sys}, (sys := normalizedEigensystem[Harper[theta]]; 
    gam := sys[[Ordering[sys[[;; , 2]], nlist[[1]], Greater][[1]], 1]];
-    If[check == 1, Print[gam],]; matrix[Abs[gam[[1]]], gam[[2]]])]
+    (* If[check == 1, Print[gam],]; *) matrix[Abs[gam[[1]]], gam[[2]]])]
 
-ABstate[alpha_, beta_(* , minUncerVect_: minUncerVec[0] *)] := 
- X[1, alpha] ** Z[1, beta] ** minUncerVec[0] (*I switched Z and X, July 15 19*)
+ABstate[alpha_, beta_, theta_: Pi/4] := X[1, alpha] ** Z[1, beta] ** minUncerVec[theta] (*I switched Z and X, July 15 19*)
 
 subsetState[line_] := 
  1/Length[line] Sum[
@@ -654,8 +686,8 @@ generateG[] :=
      Table[{x + 1, x + 1} -> 2 Cos[2 Pi/nlist[[1]] x], {x, 0, 
        nlist[[1]] - 1}]]] // N, {ket[q[1]], bra[q[1]]}]
 
-generateHarperFunctions[theta_: Pi/4] := 
- Block[{esyst = normalizedEigensystem[Harper[theta]] // Chop, pos, 
+generateHarperFunctions[sys_Integer:1,theta_: Pi/4] := 
+ Block[{esyst = normalizedEigensystem[Harper[sys,theta]] // Chop, pos, 
    neg}, pos = 
    Sort[Select[esyst, #[[1, 1, 1]] != 0 &], #1[[2]] > #2[[2]] &];
   neg = Sort[
@@ -672,8 +704,8 @@ generateHarperFunctions[theta_: Pi/4] :=
           0, -neg[[x + 1, 1]], neg[[x + 1, 1]]], {x, 0, 
         Length[neg] - 1}]]][[;; , 1]]]]
 
-generateHarperValues[theta_:Pi / 4] := 
- Block[{esyst = normalizedEigensystem[Harper[theta]] // Chop}, 
+generateHarperValues[sys_Integer:1,theta_:Pi / 4] := 
+ Block[{esyst = normalizedEigensystem[Harper[sys,theta]] // Chop}, 
   pos = Sort[
     Select[esyst, #[[1, 1, 1]] != 0 &], #1[[2]] > #2[[2]] &];
   neg = Sort[Select[esyst, #[[1, 1, 1]] == 0 &], #1[[2]] > #2[[2]] &];
@@ -743,15 +775,24 @@ ketPlot[ket_, offset_: False, squared_: False] :=
    DataRange -> {-Floor[Length[ket[[1]]]/2] + 0.5 off, 
      Ceiling[Length[ket[[1]]]/2] - 1 + 0.5 off}, Filling -> Axis,PlotRange -> Full]]
 
-ketPlot[kets_?ListQ, squared_: False] := 
+ketPlot[kets_?ListQ, squared_: False,legends_:False] := 
  Block[{ketList = kets[[;; , 1]], 
-   exponent = If[squared == True, 2, 1]}, 
+   exponent = If[squared == True, 2, 1],leg = If[legends === False, Range[1,Length[kets]],legends]}, 
   ListPlot[Table[
      Join[ketList[[i]][[Ceiling[nlist[[1]]/2] + 1 ;;]], 
       ketList[[i]][[;; Ceiling[nlist[[1]]/2]]]], {i, 1, 
       Length[kets]}]^exponent, 
    DataRange -> {-Floor[nlist[[1]]/2], Ceiling[nlist[[1]]/2] - 1}, 
-   Filling -> Axis, PlotLegends -> {Range[1, Length[kets]]}]]
+   Filling -> Axis, PlotLegends -> {leg},PlotRange -> Full]]
+
+complexKetPlot[ket_, offset_: False, squared_: False] := 
+ Block[{ketList = reorderKet[ket], 
+   exponent = If[squared == True, 2, 1], 
+   off = If[offset == True, 1, 0]}, 
+  ListPlot[{Re[ketList], Im[ketList]}^exponent, 
+   DataRange -> {-Floor[Length[ket[[1]]]/2] + 0.5 off, 
+     Ceiling[Length[ket[[1]]]/2] - 1 + 0.5 off}, Filling -> Axis, 
+   PlotRange -> Full, PlotLegends -> {Re, Im}]]
 
 ketLinePlot[ket_, squared_: False] := 
  Block[{ketList = ket[[1]], exponent = If[squared == True, 2, 1]}, 

@@ -344,7 +344,18 @@ Z[syst_, boost_?IntegerQ] :=
 Z[syst_?IntegerQ, boost_?IntegerQ] := Z[Subscript[q, syst], boost]
 
 (*I have added a factor of -1 to this!*)
-WSparse[m_, l_] := piSparse[{l}, {m}] \[Chi][1, -1/2 m l] (-1)^(l m)
+WSparse[m_, l_] := 
+ piSparse[l, m] \[LeftAngleBracket]-1/2 l, m\[RightAngleBracket] (-1)^(l.m)
+
+WSparse[m_Integer, l_Integer] := 
+ WSparse[PadRight[{m}, numSystems], PadRight[{l}, numSystems]]
+
+WSparse[system_, boost_, shift_] := (-1)^(
+  boost shift) \[Chi][system, -1/2 boost shift] matrix[
+   SparseArray[
+    Table[List[Mod[i + shift, nlist[[system]], 1], i] -> \[Chi][
+       system, Mod[(i - 1)*boost + boost shift, nlist[[system]]]], {i,
+       1, nlist[[system]]}]], {ket[q[system]], bra[q[system]]}]
 
 pi[lambda_] := Fold[diracMatrixProduct, 
  Table[Z[i, lambda[[numSystems + i]]] ** X[i, lambda[[i]]], {i, 
@@ -507,11 +518,11 @@ phiJ[syst_, j_] := Arg[Exp[I 2 Pi j/nlist[[syst]]]]
 
 wJ[syst_,j_] := Exp[I 2 Pi j / nlist[[syst]]]
 
-unitKet[num_] := matrix[UnitVector[nlist[[1]], Mod[num,nlist[[1]]]+1], {ket[q[1]]}]
+unitKet[sys_,num_] := matrix[UnitVector[nlist[[sys]], Mod[num,nlist[[sys]]]+1], {ket[q[sys]]}]
 
-vjKet[num_] := 
- 1/Sqrt[nlist[[1]]] matrix[
-   Table[wJ[1, num n], {n, 0, nlist[[1]] - 1}], {ket[q[1]]}]
+vjKet[sys_,num_] := 
+ 1/Sqrt[nlist[[sys]]] matrix[
+   Table[wJ[sys, num n], {n, 0, nlist[[sys]] - 1}], {ket[q[sys]]}]
 
 momentum[syst_?IntegerQ] := 
  matrix[Chop@N@Table[
@@ -607,7 +618,7 @@ gaussianKet[syst_?IntegerQ, covar_, mean_] :=
    trace[state ** WSparse[i, j]], {i, 0, nlist[[1]] - 1}, {j, 0, 
     nlist[[1]] - 1}]
  *)
-charfcn[state_, i_, j_] := 1/nlist[[1]] trace[state ** WSparse[i, j]]
+charfcn[state_, i_, j_] := 1/dimension[state[[2,1]]] trace[state ** WSparse[i, j]]
 
 charfcn[state_] := 
  Table[charfcn[state, i, j], {i, 0, nlist[[1]] - 1}, {j, 0, 

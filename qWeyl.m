@@ -24,6 +24,15 @@ adjugate::usage = "";
 
 adjointEndo::usage = "";
 
+randomLambda::usage = "Generate a random element from the phase space.";
+
+divideToBlocks::usage = "Given an even-dimensional square symplectic matrix, this divides the matrix into blocks, according to Kailblinger and Neuhauser.
+  eg, to get the decomposition as in the paper, for symplectic T, write {A,B,C,D} = divideToBlocks[T]";
+
+getTheta::usage = "This function, given a block of a symplectic matrix, generates the matrix theta from Kaiblinger and Neuhauser.";
+
+getThetaP::usage = "";
+
 symp::usage = "The symplectic bracket, usually done via vec1 ~symp~ vec2";
 
 (*qWeyl*)
@@ -66,6 +75,8 @@ primelist::usage = "this is a global variable; lists the prime numbers that are 
 factorlist::usage = "this is a global variable; lists the factors that go into nlist."
 
 FourierU::usage= "";
+
+invFourierU::usage = "";
 
 SFourier::usage = "";
 
@@ -289,7 +300,7 @@ generateSymplectic[sa_, aut_, B_, theta_] :=
      vecMod[mat[[;; 2, 3 ;;]]]}, {vecMod[mat[[3 ;;, ;; 2]]], 
      vecMod[mat[[3 ;;, 3 ;;]]]}}]]
 
-selfAdjointEndoQ[endo_] := endo == vecMod[adjointEndo[endo]]
+selfAdjointEndoQ[endo_] := endo == vecMod[adjointEndo[endo]] && endomorphismQ[endo]
 
 inverseAut[A_] := 
  If[! automorphismQ[A], 
@@ -317,6 +328,27 @@ inverseHp[A_, primePos_] :=
   primelist[[primePos]]^Select[factorlist[[primePos, 2]],# !=0 &]]
 
 adjointEndo[A_] := Nmat.Transpose[A].Inverse[Nmat]
+
+randomLambda[] := 
+ Table[RandomInteger[{0, nlist[[Mod[i, numSystems] + 1]] - 1}], {i, 0,
+    2 numSystems - 1}]
+
+divideToBlocks[mat_] := 
+ Block[{dim = Dimensions[mat][[1]]}, {mat[[;; dim/2, ;; dim/2]], 
+   mat[[;; dim/2, dim/2 + 1 ;;]], mat[[dim/2 + 1 ;;, ;; dim/2]], 
+   mat[[dim/2 + 1 ;;, dim/2 + 1 ;;]]}]
+
+getThetaP[block_, number_] := 
+ DiagonalMatrix[
+  Flatten[(If[AllTrue[#, # == 0 &], 1, 0] & /@ RowReduce[#]) & /@ 
+    Block[{val = 0, mat = Mod[block, primelist[[number]]]}, 
+     Table[mat[[val = Flatten[Position[factorlist[[number, 2]], i]], 
+        val]], {i, DeleteDuplicates[factorlist[[number, 2]]]}]]]]
+
+getTheta[block_] := 
+ Block[{v = Apply[Times, primelist]}, 
+  Sum[v/primelist[[val]] getThetaP[block, val], {val, 
+    Length[primelist]}]]
 
 symp[vec1_, vec2_] := vec1.SFourier[Length[vec1]/2].vec2
 
@@ -415,6 +447,18 @@ FourierUBlock[sys_?IntegerQ] :=
 FourierU[systems___] := If[Length[{systems}]==0,
 	Fold[diracMatrixProduct, Table[FourierUBlock[i], {i, numSystems}]], 
 	Fold[diracMatrixProduct, Table[FourierUBlock[i], {i, {systems}}]] ]
+
+invFourierUBlock[sys_?IntegerQ] := 
+  matrix[1/Sqrt[nlist[[sys]]] Table[\[Chi][sys, i j], {i, 0, 
+      nlist[[sys]] - 1}, {j, 0, nlist[[sys]] - 1}], {ket[
+     Subscript[q, sys]], bra[Subscript[q, sys]]}];
+
+invFourierU[systems___] := 
+ If[Length[{systems}] == 0, 
+  Fold[diracMatrixProduct, 
+   Table[invFourierUBlock[i], {i, numSystems}]], 
+  Fold[diracMatrixProduct, 
+   Table[invFourierUBlock[i], {i, {systems}}]]]
  
 SFourier[numSys_] := 
  ArrayFlatten[{{ConstantArray[0, {numSys, numSys}], 
@@ -444,7 +488,7 @@ vecMod[list_] := Table[Mod[list[[i]], nlist[[i]]], {i, 1, numSystems}]
 vecMod[list_,mods_] := Table[Mod[list[[i]], mods[[i]]], {i, 1, Length[mods]}]
 
 
-DilationU[A_] := 
+(* DilationU[A_] := 
  matrix[Table[
      If[Table[sub[vark, i], {i, numSystems}] == 
        vecMod[A.Table[sub[varl, i], {i, numSystems}]], 1, 0], ##] & @@
@@ -453,12 +497,12 @@ DilationU[A_] :=
        nlist[[i]] - 1}}
      , {i, 1, numSystems}], 1], 
   Flatten[Table[{ket[Symbol["q" <> ToString[i]]], 
-     bra[Symbol["q" <> ToString[i]]]}, {i, numSystems}]]]
+     bra[Symbol["q" <> ToString[i]]]}, {i, numSystems}]]] *)
 
 sendsTo[autInv_, jlist_] := 
  Riffle[vecMod[autInv.jlist] + 1, jlist + 1]
 
-DilationUSparse[A_] := 
+DilationU[A_] := 
  matrix[SparseArray@
    Flatten[Table[
        sendsTo[A, Table[j[i], {i, 1, numSystems}]] -> 
@@ -761,12 +805,12 @@ Join[ket[[1, Ceiling[Length[ket[[1]]]/2] + 1 ;;]],
  ket[[1, ;; Ceiling[Length[ket[[1]]]/2]]]]
 
 reorderCharfcn[charfcn_] := 
- ArrayFlatten[{{charfcn[[Ceiling[nlist[[1]]/2] + 1 ;;, 
-      Ceiling[nlist[[1]]/2] + 1 ;;]], 
-    charfcn[[Ceiling[nlist[[1]]/2] + 1 ;;, ;; 
-       Ceiling[nlist[[1]]/2]]]}, {charfcn[[;; Ceiling[nlist[[1]]/2], 
-      Ceiling[nlist[[1]]/2] + 1 ;;]], 
-    charfcn[[;; Ceiling[nlist[[1]]/2], ;; Ceiling[nlist[[1]]/2]]]}}]
+ Block[{dim = Dimensions[charfcn][[1]]}, 
+  ArrayFlatten[{{charfcn[[Ceiling[dim/2] + 1 ;;, 
+       Ceiling[dim/2] + 1 ;;]], 
+     charfcn[[Ceiling[dim/2] + 1 ;;, ;; Ceiling[dim/2]]]}, {charfcn[[;;
+         Ceiling[dim/2], Ceiling[dim/2] + 1 ;;]], 
+     charfcn[[;; Ceiling[dim/2], ;; Ceiling[dim/2]]]}}]]
 
 blockify[mat_] := 
  ArrayFlatten[{{mat[[;; Floor[nlist[[1]]/2] + 1, ;; 

@@ -92,7 +92,10 @@ DilationU::usage = "Don't use this! use DilationUSparse instead. This should pro
 
 DilationUSparse::usage = "This is the proper Dilation. A must be an automorphism of the group.";
 
-phiChirp::usage = "";
+phiC::usage = "This is the second degree character used in Kaiblinger and Neuhauser. It is used to generate the 
+  ChirpU, and phiChirp is just the conjugate of this.";
+
+phiChirp::usage = "Simply the conjugate of phiC, this way one can write phiChirp without conjugation.";
 
 ChirpU::usage = "C must be a self-adjoint endomorphism of the group. ";
 
@@ -520,12 +523,13 @@ phiDilation[l_, m_] := 1
 
 phiDilation[lambda_] := phiDilation[lambda[[;;numSystems]], lambda[[numSystems+1;;]]]
 
-phiChirp[c_, k_] := 
- Exp[Pi I k.(IdentityMatrix[numSystems] + Inverse[Nmat]).c.(IdentityMatrix[numSystems] + Nmat).k]
+phiC[c_,k_] := Exp[Pi I k.(IdentityMatrix[numSystems] + Inverse[Nmat]).c.(IdentityMatrix[numSystems] + Nmat).k]
+
+phiChirp[c_, k_] := Conjugate[phiC[c,k]]
 
 ChirpU12[c_] := 
  matrix[Table[
-   If[l1 == k1 && l2 == k2, phiChirp[c, {l1, l2}], 0], {l1, 0, 
+   If[l1 == k1 && l2 == k2, phiC[c, {l1, l2}], 0], {l1, 0, 
     p - 1}, {k1, 0, p - 1}, {l2, 0, p - 1}, {k2, 0, p - 1}], {ket[q1],
     bra[q1], ket[q2], bra[q2]}]
 
@@ -534,7 +538,7 @@ ChirpU[c_] :=
    Flatten[Table[
        Riffle[Table[j[i], {i, numSystems}] + 1, 
          Table[j[i], {i, numSystems}] + 1] -> 
-        phiChirp[c, Table[j[i], {i, numSystems}]], ##] & @@ 
+        phiC[c, Table[j[i], {i, numSystems}]], ##] & @@ 
      Evaluate[Table[{j[i], 0, nlist[[i]] - 1}, {i, 1, numSystems}]]]],
    Riffle[Table[ket[Symbol["q" <> ToString[i]]], {i, numSystems}], 
    Table[bra[Symbol["q" <> ToString[i]]], {i, numSystems}]]]

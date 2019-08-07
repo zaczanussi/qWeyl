@@ -88,9 +88,9 @@ SDilation::usage = "";
 
 phiDilation::usage = "";
 
-DilationU::usage = "Don't use this! use DilationUSparse instead. This should probably be deleted soon.";
+(* DilationU::usage = "Don't use this! use DilationUSparse instead. This should probably be deleted soon."; *)
 
-DilationUSparse::usage = "This is the proper Dilation. A must be an automorphism of the group.";
+DilationU::usage = "This is the proper Dilation. A must be an automorphism of the group.";
 
 phiC::usage = "This is the second degree character used in Kaiblinger and Neuhauser. It is used to generate the 
   ChirpU, and phiChirp is just the conjugate of this.";
@@ -100,6 +100,15 @@ phiChirp::usage = "Simply the conjugate of phiC, this way one can write phiChirp
 ChirpU::usage = "C must be a self-adjoint endomorphism of the group. ";
 
 SChirp::usage = "";
+
+metaplecticU::usage = "Given a symplectic matrix, computes it's associated metaplectic. One can also give it the metaplectic building blocks,
+  A0, B, C0, theta.";
+
+phiMetaplectic::usage = "Given a symplectic matrix and an element of the phase space, computes the associated second degree character. One can also give it the metaplectic building blocks,
+  A0, B, C0, theta.";
+
+SMetaplectic::usage = "Given a symplectic matrix, well, I guess it returns the symplectic given. I guess I never really thought about this one until now. One can also give it the metaplectic building blocks,
+  A0, B, C0, theta.";
 
 vecMod::usage = "This computes the modulo of a list where each component is reduced mod it's corresponding element in nlist. 
 	It also happens to reduce a matrix's rows mod nlist, which is convenient.";
@@ -382,6 +391,9 @@ Z[syst_?IntegerQ, boost_?IntegerQ] := Z[Subscript[q, syst], boost]
 WSparse[m_, l_] := 
  piSparse[l, m] \[LeftAngleBracket]-1/2 l, m\[RightAngleBracket] (-1)^(l.m)
 
+WSparse[lambda_] := 
+ WSparse[lambda[[;; numSystems]], lambda[[numSystems + 1 ;;]]]
+
 WSparse[m_Integer, l_Integer] := 
  WSparse[PadRight[{m}, numSystems], PadRight[{l}, numSystems]]
 
@@ -547,6 +559,52 @@ SChirp[C_?ListQ] :=
  ArrayFlatten[{{IdentityMatrix[numSystems], 
     ConstantArray[0, {numSystems, numSystems}]}, {C, 
     IdentityMatrix[numSystems]}}]
+
+metaplecticU[A0_, B_, C0_, theta_] := 
+ Block[{A = vecMod[A0], CinvA = vecMod[C0.inverseAut[A0]], 
+   invAB = vecMod[-inverseAut[A0].B], minTheta = vecMod[-theta]}, 
+  ChirpU[CinvA] ** DilationU[A] ** invFourierU[] ** ChirpU[invAB] ** 
+   FourierU[] ** ChirpU[minTheta]]
+
+phiMetaplectic[A0_, B_, C0_, theta_, z_] := 
+ Block[{A = vecMod[A0], CinvA = vecMod[C0.inverseAut[A0]], 
+   invAB = vecMod[-inverseAut[A0].B], minTheta = vecMod[-theta]}, 
+  phiChirp[CinvA, (SDilation[A].SFourierInv[numSystems].SChirp[
+        invAB].SFourier[numSystems].SChirp[minTheta].z)[[Range[
+       numSystems]]]] phiDilation[
+    SFourierInv[numSystems].SChirp[invAB].SFourier[numSystems].SChirp[
+      minTheta].z] phiFourier[
+    SChirp[invAB].SFourier[numSystems].SChirp[minTheta].z] phiChirp[
+    invAB, (SFourier[numSystems].SChirp[minTheta].z)[[Range[
+       numSystems]]]] phiFourier[SChirp[minTheta].z] phiChirp[
+    minTheta, z[[Range[numSystems]]]]]
+
+SMetaplectic[A0_, B_, C0_, theta_] := 
+ Block[{A = vecMod[A0], CinvA = vecMod[C0.inverseAut[A0]], 
+   invAB = vecMod[-inverseAut[A0].B], minTheta = vecMod[-theta]}, 
+  SChirp[CinvA].SDilation[A].SFourierInv[numSystems].SChirp[
+    invAB].SFourier[numSystems].SChirp[minTheta]]
+
+metaplecticU[symp_] := 
+ Block[{blocks = divideToBlocks[symp], theta, A0, C0}, 
+  theta = getTheta[blocks[[1]]]; 
+  A0 = vecMod[blocks[[1]] + blocks[[2]].theta]; 
+  C0 = vecMod[blocks[[3]] + blocks[[4]].theta]; 
+  metaplecticU[A0, blocks[[2]], C0, theta]]
+
+phiMetaplectic[symp_, z_] := 
+ Block[{blocks = divideToBlocks[symp], theta, A0, C0}, 
+  theta = getTheta[blocks[[1]]]; 
+  A0 = vecMod[blocks[[1]] + blocks[[2]].theta]; 
+  C0 = vecMod[blocks[[3]] + blocks[[4]].theta]; 
+  phiMetaplectic[A0, blocks[[2]], C0, theta, z]]
+
+SMetaplectic[symp_] := 
+ Block[{blocks = divideToBlocks[symp], theta, A0, C0}, 
+  theta = getTheta[blocks[[1]]]; 
+  A0 = vecMod[blocks[[1]] + blocks[[2]].theta]; 
+  C0 = vecMod[blocks[[3]] + blocks[[4]].theta]; 
+  SMetaplectic[A0, blocks[[2]], C0, theta]]
 
 InverseMod[val_, p_] := If[GCD[val, p] == 1, PowerMod[val, -1, p], 0]
 SetAttributes[InverseMod, Listable];

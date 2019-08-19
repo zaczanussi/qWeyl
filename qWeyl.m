@@ -1,4 +1,4 @@
-BeginPackage["qWeyl`",{"qmatrix`"}]
+BeginPackage["qWeyl`", {"qmatrix`"} ]
 
 (*Finite Abelian Groups*)
 
@@ -687,6 +687,27 @@ Power[state_?matrixQ, number_?IntegerQ] :=
  If[number!=0,Fold[diracMatrixProduct, Table[state, {i, number}]],identityMatrix[state[[2]]]]
 Protect[Power]
 
+Unprotect[Dot]
+
+Dot[opts_, mat_] := 
+ Table[Sum[mat[[i, j]] opts[[i]], {i, Length[opts]}], {j, 
+    Dimensions[mat][[2]]}] /; 
+  VectorQ[opts, matrixQ] && MatrixQ[mat] && 
+   Length[opts] == Dimensions[mat][[1]]
+
+Dot[mat_, opts_] := 
+ Table[Sum[mat[[i, j]] opts[[j]], {j, Length[opts]}], {i, 
+    Dimensions[mat][[1]]}] /; 
+  VectorQ[opts, matrixQ] && MatrixQ[mat] && 
+   Length[opts] == Dimensions[mat][[2]]
+
+Dot[opts1_, opts2_] := 
+ Sum[opts1[[j]] ** opts2[[j]], {j, Length[opts1]}] /; 
+  VectorQ[opts1, matrixQ] && VectorQ[opts2, matrixQ] && 
+   Length[opts1] == Length[opts2]
+
+Protect[Dot]
+
 commutatorMatrix[state_, obs_] := 
  I Table[trace[state ** commutator[obs[[j]], obs[[k]]]], {j, 
     2numSystems}, {k, 2numSystems}]
@@ -772,10 +793,10 @@ subsetState[line_] :=
 subsetState[line_, coeffs_] := 
  Block[{}, 
   If[Total[coeffs] != 1, 
-   Print["Sum of coefficients is not equal to 1;"],]; 
+   Print["Sum of coefficients is not equal to 1;"],Null]; 
   If[Length[line] != Length[coeffs], 
    Print["The number of elements in line is different than the number \
-of coefficients"],]; 
+of coefficients"],Null]; 
   Sum[coeffs[[i]] ABstate[line[[i, 1]], line[[i, 2]]] ** 
      hc[ABstate[line[[i, 1]], line[[i, 2]]]], {i, 1, Length[line]}]]
 

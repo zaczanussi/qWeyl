@@ -211,6 +211,10 @@ generateHarperFunctions::usage = "";
 
 generateHarperValues::usage = "";
 
+generateHamiltonian::usage = "";
+
+orderedEigenvectors::usage = "";
+
 unitKet::usage = "Gives the standard basis, with 0 begin the first element and nlist[[1]] - 1 being the last. Be careful;
   currently unitKet and vjKet have a different ordering, so that F|ej> = |v{n-j}> but F|vj> = |ej>.";
 
@@ -835,6 +839,27 @@ generateHarperValues[sys_Integer:1,theta_:Pi / 4] :=
       Table[{x + 1, 1} -> 
         If[neg[[x + 1, 1, 1, 2]] < 0, -neg[[x + 1, 1]], 
          neg[[x + 1, 1]]], {x, 0, Length[neg] - 1}]]][[;; , 2]]]]
+
+generateHamiltonian[H_] := 
+ Block[{Rvec = generateR[]}, 1/2 Dot[Dot[Rvec, H] // Chop, Rvec]]
+
+orderedEigenvectors[Hamil_] := 
+ Block[{esyst = normalizedEigensystem[Hamil] // Chop, pos, neg}, 
+  pos = Sort[
+    Select[esyst, #[[1, 1, 1]] != 0 &], #1[[2]] < #2[[2]] &];
+  neg = Sort[
+    Select[esyst, #[[1, 1, 1]] == 0 &], #1[[2]] < #2[[2]] &];
+  DeleteDuplicates[
+   Riffle[ReplacePart[pos, 
+      Table[{x + 1, 1} -> 
+        If[pos[[x + 1, 1, 1, Ceiling[(Length[esyst])/2]]] < 
+          0, -pos[[x + 1, 1]], pos[[x + 1, 1]]], {x, 0, 
+        Length[pos] - 1}]], 
+     ReplacePart[neg, 
+      Table[{x + 1, 1} -> 
+        If[neg[[x + 1, 1, 1, Ceiling[(Length[esyst])/2]]] < 
+          0, -neg[[x + 1, 1]], neg[[x + 1, 1]]], {x, 0, 
+        Length[neg] - 1}]]][[;; , 1]]]]
 
 hermiteGaussian[k_, x_] := 
  1/(Surd[Pi, 4] Sqrt[2^k Factorial[k] Exp[x^2]]) HermiteH[k, x]

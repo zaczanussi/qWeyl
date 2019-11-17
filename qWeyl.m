@@ -221,6 +221,34 @@ unitKet::usage = "Gives the standard basis, with 0 begin the first element and n
 vjKet::usage = "Gives the Fourier basis, with 0 being the first element. This might seem like it is ordered backward, but it is like this to 
   be consistent with the X and Z matrices.";
 
+(*Serafini*)
+
+psdSymplecticDiagonalize::usage = "psdSymplecticDiagonalize[psd_]
+Given a positive semidefinite matrix psd, this returns the symplectic matrix that diagonalizes it by congruence, that is, S . psd . S^T. This 
+function performs the normal mode decomposition.";
+
+randomRealPSD::usage = "randomRealPSD[n_]
+This function generates a 'random' n by n real positive semidefinite matrix, by first generating a random matrix M with entries between 
+0 and 1, and then taking it's product with it's transpose, M.M^T";
+
+randomIntegerPSD::usage = "randomIntegerPSD[n_, lim_: 10]
+This function generates a 'random' n by n integer positive semidefinite matrix, by first generating a random matrix M with entries between 
+0 and lim, and then taking it's product with it's transpose, M.M^T";
+
+omega::usage = "omega[n_]
+This function returns the 2n by 2n matrix of the symplectic form, the one where canonical observables are ordered (p_1,q_1, ... , p_n ,q_n). For the 
+other ordering, use SFourier[n].";
+
+diagonalizeOmega::usage = "diagonalizeOmega[n_]
+Returns the 2n by 2n matrix U that diagonalizes the symplectic form omega.";
+
+getL::usage = "getL[psd_]
+Returns the matrix L that diagonalizes i Omega . psd, where psd is a positive semidefinite matrix.";
+
+symplecticEigenvalues::usage = "symplecticEigenvalues[psd_]
+Returns the symplectic eigenvalues of a positive semidefinite matrix psd, that is, the eigenvalues of the matrix i Omega . psd.";
+
+
 (*Plotting*)
 
 reorderKet::usage = "";
@@ -236,6 +264,10 @@ reorderCharfcn::usage = "";
 blockify::usage = "";
 
 charfcnPlot::usage = "";
+
+gibbs::usage = "";
+
+cosine::usage = "";
 
 randomProbDistro::usage = "";
 
@@ -795,7 +827,7 @@ subsetState[line_, coeffs_] :=
   If[Total[coeffs] != 1, 
    Print["Sum of coefficients is not equal to 1;"],Null]; 
   If[Length[line] != Length[coeffs], 
-   Print["The number of elements in line is different than the number \
+   Print["The number of elements in line is different than the number 
 of coefficients"],Null]; 
   Sum[coeffs[[i]] ABstate[line[[i, 1]], line[[i, 2]]] ** 
      hc[ABstate[line[[i, 1]], line[[i, 2]]]], {i, 1, Length[line]}]]
@@ -814,6 +846,7 @@ scalarMultipleQ[vec1_?matrixQ, vec2_?matrixQ] :=
 
 vectorSolve[b_, vecs_?ListQ] := 
  LinearSolve[Table[vecs[[num, 1]], {num, 1, Length[vecs]}], b]
+ 
 vectorSolve[b_?matrixQ, vecs_?ListQ] := 
  LinearSolve[Table[vecs[[num, 1]], {num, 1, Length[vecs]}], b[[1]]]
 
@@ -882,8 +915,9 @@ orderedEigenvectors[Hamil_] :=
           0, -neg[[x + 1, 1]], neg[[x + 1, 1]]], {x, 0, 
         Length[neg] - 1}]]][[;; , 1]]]]
 
-hermiteGaussian[k_, x_] := 
- 1/(Surd[Pi, 4] Sqrt[2^k Factorial[k] Exp[x^2]]) HermiteH[k, x]
+hermiteGaussian[k_, x_, oh_: 1] := 
+ Sqrt[oh]/(Surd[oh Pi, 4] Sqrt[
+      2^k Factorial[k] Exp[oh x^2]]) HermiteH[k, Sqrt[oh] x]
 
 kravchukPoly[s_, n_, z_?IntegerQ] := 
  Sum[(-2)^k Binomial[z, k] Binomial[s, k] Binomial[n - 1, k]^-1, {k, 
@@ -905,6 +939,45 @@ xKet[s_, n_] :=
  matrix[xBasis[s, n, #] & /@ 
    Join[Range[0, Ceiling[n/2] - 1], Range[-Floor[n/2], -1]], {ket[
     q[1]]}]
+
+(*Serafini*)
+
+(*This function is horrible; please fix it*)
+psdSymplecticDiagonalize[psd_] := 
+ Block[{dia = I omega[Length[psd]/2].psd, S, 
+   evals}, (evals = Abs[Eigenvalues[dia]]; 
+   S = ConjugateTranspose@diagonalizeOmega[Length[psd]/2].Inverse@
+       ConjugateTranspose@getL[psd] // Chop; 
+   Sqrt[evals[[#]]/S[[#]].psd.S[[#]]] S[[#]] & /@ Range[Length[psd]])]
+
+randomRealPSD[n_] := 
+ Block[{comp = Table[RandomReal[{-1, 1}], {n}, {n}]}, 
+  Transpose[comp].comp]
+
+randomIntegerPSD[n_, lim_: 10] := 
+ Block[{comp = Table[RandomInteger[lim], {n}, {n}]}, 
+  Transpose[comp].comp]
+
+omega[n_] := 
+ Block[{omega1 = {{0, 1}, {-1, 0}}}, 
+  ArrayFlatten[Table[If[i == k, omega1, 0], {i, n}, {k, n}]]]
+
+diagonalizeOmega[n_] := 
+ Block[{u1 = 1/Sqrt[2] {{1, I}, {1, -I}}}, 
+  ArrayFlatten[Table[If[i == k, u1, 0], {i, n}, {k, n}]]]
+
+(*Another really ugly function. Seriously, a swap variable? What is this, a linked list?*)
+getL[psd_] := 
+ Block[{dia = I omega[Length[psd]/2].psd, evecs, 
+   swap}, (evecs = Eigenvectors[I omega[Length[psd]/2].psd]//N; 
+   If[Chop[evecs[[2 # + 1]]\[Conjugate].dia.evecs[[2 # + 1]]] < 
+       0, (swap = evecs[[2 # + 1]]; 
+       evecs[[2 # + 1]] = evecs[[2 # + 2]]; 
+       evecs[[2 # + 2]] = swap),] & /@ Range[0, Length[psd]/2 - 1]; 
+   Inverse@Transpose[evecs] // Chop)]
+
+symplecticEigenvalues[psd_] := 
+ Block[{dia = I omega[Length[psd]/2].psd}, Eigenvalues[dia]] // Chop
 
 (*Plotting*)
 
@@ -975,12 +1048,22 @@ ketLinePlot[kets_?ListQ, squared_: False] :=
    DataRange -> {-Floor[nlist[[1]]/2], Ceiling[nlist[[1]]/2] - 1}, 
    Filling -> Axis, PlotLegends -> {Range[1, Length[kets]]}]]
 
-charfcnPlot[charfcn_] := 
- Block[{dim = Dimensions[charfcn][[1]], 
-   off = If[Mod[Dimensions[charfcn][[1]], 2] == 0, .5, 0]}, 
-   ListPlot3D[reorderCharfcn[charfcn], PlotRange -> Full, 
-    DataRange -> {{-dim/2 - off, dim/2 - off}, {-dim/2 - off, 
-       dim/2 - off}}]]
+charfcnPlot[state_?matrixQ, normSquared_: False] := 
+ Block[{dim = Dimensions[state[[1]]][[1]], 
+   off = If[Mod[Dimensions[state[[1]]][[1]], 2] == 0, .5, 0], 
+   charfcn = 
+    If[normSquared == False, Chop@reorderCharfcn@charfcn[state], 
+     Abs[Chop[reorderCharfcn[charfcn[state]]]]^2]}, 
+  ListPlot3D[
+   If[Re[charfcn] == charfcn, charfcn, {Re[charfcn], Im[charfcn]}], 
+   PlotRange -> Full, 
+   DataRange -> {{-dim/2 - off, dim/2 - off}, {-dim/2 - off, 
+      dim/2 - off}}]]
+
+gibbs[ham_, beta_: 1] := 
+ exp[-beta ham // N]/trace[exp[-beta ham // N]] // Chop
+
+cosine[opt_, phase_: 1] := 1/2 (phase opt + Conjugate[phase] hc[opt])
 
 (* Useful Code Snippets that I want to keep *)
 

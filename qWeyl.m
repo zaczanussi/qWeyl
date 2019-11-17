@@ -1048,6 +1048,13 @@ ketLinePlot[kets_?ListQ, squared_: False] :=
    DataRange -> {-Floor[nlist[[1]]/2], Ceiling[nlist[[1]]/2] - 1}, 
    Filling -> Axis, PlotLegends -> {Range[1, Length[kets]]}]]
 
+charfcnPlot[charfcn_] := 
+ Block[{dim = Dimensions[charfcn][[1]], 
+   off = If[Mod[Dimensions[charfcn][[1]], 2] == 0, .5, 0]}, 
+  ListPlot3D[reorderCharfcn[charfcn], PlotRange -> Full, 
+   DataRange -> {{-dim/2 - off, dim/2 - off}, {-dim/2 - off, 
+      dim/2 - off}}]]
+
 charfcnPlot[state_?matrixQ, normSquared_: False] := 
  Block[{dim = Dimensions[state[[1]]][[1]], 
    off = If[Mod[Dimensions[state[[1]]][[1]], 2] == 0, .5, 0], 

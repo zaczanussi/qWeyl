@@ -1048,6 +1048,7 @@ ketLinePlot[kets_?ListQ, squared_: False] :=
    DataRange -> {-Floor[nlist[[1]]/2], Ceiling[nlist[[1]]/2] - 1}, 
    Filling -> Axis, PlotLegends -> {Range[1, Length[kets]]}]]
 
+(*I need to make this work for complex functions. Should be pretty easy.*)
 charfcnPlot[charfcn_] := 
  Block[{dim = Dimensions[charfcn][[1]], 
    off = If[Mod[Dimensions[charfcn][[1]], 2] == 0, .5, 0]}, 
